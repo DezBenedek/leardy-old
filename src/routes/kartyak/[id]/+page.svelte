@@ -336,7 +336,7 @@
 			</IconButton>
 		{:else if inLibrary}
 			<IconButton
-				ariaLabel="Eltávolítás a könyvtárból"
+				tutorialId="package-save" ariaLabel="Eltávolítás a könyvtárból"
 				title="Eltávolítás a könyvtárból"
 				size={44}
 				tone="danger"
@@ -346,7 +346,7 @@
 			</IconButton>
 		{:else}
 			<IconButton
-				ariaLabel="Mentés a könyvtárba: {pkg.title}"
+				tutorialId="package-save" ariaLabel="Mentés a könyvtárba: {pkg.title}"
 				title="Mentés a könyvtárba"
 				size={44}
 				onclick={addToLibrary}
@@ -384,7 +384,7 @@
 					{sm2.due} esedékes
 				</p>
 			{/if}
-			<div class="mt-3">
+			<div data-tutorial="package-practice" class="mt-3">
 				<Button block size="lg" onclick={openPractice}>
 					<Layers size={18} /> {studyOnly ? 'Kártyák gyakorlása' : 'Szavak gyakorlása'}
 				</Button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getTutorial } from '$lib/tutorial/controller.svelte';
 	import { contentFetch, offlineIdentity, subscribeContent } from '$lib/content-client';
 	import { buildOfflineCatalog, readOfflineCatalog } from '$lib/offline-content';
 	import { pendingProgress, outbox } from '$lib/progress-outbox.svelte';
@@ -45,6 +46,7 @@
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import type { PageData } from './$types';
 
+	const tutorial = getTutorial();
 	let { data }: { data: PageData } = $props();
 	let user = $derived(auth.ready ? auth.user : data.user);
 	let connected = $state(true);
@@ -140,7 +142,7 @@
 
 	let scopeOpen = $state(false);
 	let prevSubject = $state<string | null>(null);
-	function openScope() { scopeOpen = true; }
+	function openScope() { scopeOpen = true; tutorial?.signal('scope-open'); }
 	function pickScope(picks: ContentPick[]) {
 		const pick = picks[0];
 		if (!pick) return;
@@ -148,6 +150,7 @@
 		subjectId = pick.subjectId;
 		levelId = pick.levelId;
 		scopeOpen = false;
+		tutorial?.signal('scope-level', { subjectId: pick.subjectId, levelId: pick.levelId, levelLabel: pick.levelLabel });
 	}
 
 	async function fetchTreeRaw(id: string, cacheOnly = false): Promise<SubjectTree | null> {
@@ -362,6 +365,20 @@
 		qpOpen = true;
 	}
 
+	$effect(() => tutorial?.register('learning', {
+		prepare(step, context) {
+			if (subjectsQ.error) subjectsQ.refresh();
+			if (treeQ.error) treeQ.refresh();
+			query = ''; searchFocus = false; status = 'all'; collapsed = {};
+			if (context.subjectId) subjectId = context.subjectId;
+			if (context.levelId) levelId = context.levelId;
+			if (step.id === 'scope-subject' || step.id === 'scope-level') scopeOpen = true;
+			else scopeOpen = false;
+			filterOpen = false;
+		},
+		close() { scopeOpen = false; filterOpen = false; }
+	}));
+
 	const pickRowBtn =
 		'flex w-full items-center gap-3 rounded-2xl border border-stone-200 bg-white p-3 text-left transition hover:bg-stone-50 active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 dark:border-white/10 dark:bg-transparent dark:hover:bg-white/5';
 	const optRowBtn =
@@ -392,6 +409,7 @@
 	>
 		<div class="grid h-full w-[46px] place-items-center">
 			<IconButton
+				tutorialId="scope-open"
 				ariaLabel="Tantárgy és tananyag: {activeSubject?.title ?? 'Választás'}, {activeLevelTitle}"
 				size={46}
 				disabled={searchFocus}
@@ -404,6 +422,7 @@
 		</div>
 	</div>
 	<SearchInput
+		tutorialId="learning-search"
 		bind:value={query}
 		placeholder="Keresés…"
 		ariaLabel="Keresés a leckék között"
@@ -417,7 +436,7 @@
 	>
 		<div class="grid h-full w-[46px] place-items-center">
 			<IconButton
-				ariaLabel="Szűrők és rendezés"
+				tutorialId="learning-filters" ariaLabel="Szűrők és rendezés"
 				size={46}
 				disabled={searchFocus}
 				onclick={() => (filterOpen = true)}
@@ -441,7 +460,7 @@
 	>
 		<div class="grid h-full w-[46px] place-items-center">
 			<IconButton
-				ariaLabel={canEdit ? 'Tananyag szerkesztése' : lastLesson?.title ? `Folytatás: ${lastLesson.title}` : 'Folytatás: utolsó lecke megnyitása'}
+				tutorialId={canEdit ? undefined : "learning-continue"} ariaLabel={canEdit ? 'Tananyag szerkesztése' : lastLesson?.title ? `Folytatás: ${lastLesson.title}` : 'Folytatás: utolsó lecke megnyitása'}
 				title={canEdit ? 'Tananyag szerkesztése' : lastLesson?.title ? `Folytatás: ${lastLesson.title}` : 'Folytatás'}
 				size={46}
 				disabled={searchFocus}
@@ -459,7 +478,7 @@
 	</p>
 {/if}
 
-<div class="mt-4">
+<div class="mt-4" data-tutorial-empty={(localMode ? !offlineLoading : !subjectsQ.loading && subjectsQ.data != null) && subjects.every((s) => s.lessonCount === 0) ? 'learning' : undefined}>
 	{#if localMode ? offlineLoading : treeQ.loading || subjectsQ.loading}
 		<div role="status" aria-label="Betöltés" class="grid gap-2.5">
 			{#each [0, 1] as i (i)}
@@ -531,6 +550,7 @@
 										{#each mat.lessons as le (le.id)}
 											<li>
 												<a
+													data-tutorial="lesson-link" data-tutorial-content-id={le.id}
 													href={lessonPath(le.id)}
 													class="flex items-center gap-2 py-2 text-[14px] font-semibold text-ink-600 transition hover:text-brand-600 dark:text-stone-300 dark:hover:text-white"
 												>
@@ -562,13 +582,14 @@
 	open={scopeOpen}
 	subjects={subjects}
 	select="level"
-	startSubjectId={levelId ? subjectId : ''}
+	tutorialStep={tutorial?.active && tutorial.stepId === 'scope-subject' ? 'subject' : tutorial?.active && tutorial.stepId === 'scope-level' ? 'level' : undefined}
+	startSubjectId={tutorial?.active ? tutorial.stepId === 'scope-level' ? tutorial.context.subjectId ?? '' : '' : levelId ? subjectId : ''}
 	selectedSubjectId={subjectId}
 	selectedLevelId={levelId}
 	initialTree={activeTree}
 	loadTree={localMode ? loadOfflineTree : undefined}
 	cacheVersion={localMode ? offlineCatalog : undefined}
-	includeAllLevels
+	includeAllLevels={!tutorial?.active}
 	onPick={pickScope}
 	onClose={() => (scopeOpen = false)}
 />

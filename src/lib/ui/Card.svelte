@@ -6,6 +6,8 @@
 
 	interface Props {
 		href?: string;
+		tutorialId?: string;
+		tutorialContentId?: string;
 		tone?: Tone;
 		pad?: Pad;
 		onclick?: (e: MouseEvent) => void;
@@ -13,7 +15,7 @@
 		children: Snippet;
 	}
 
-	let { href, tone = 'plain', pad = 'md', onclick, ariaLabel, children }: Props = $props();
+	let { tutorialId, tutorialContentId, href, tone = 'plain', pad = 'md', onclick, ariaLabel, children }: Props = $props();
 
 	const tones: Record<Tone, string> = {
 		plain: 'border-stone-200 bg-white dark:border-white/10 dark:bg-stone-900',
@@ -35,7 +37,7 @@
 </script>
 
 {#if href}
-	<a {href} class={cls} aria-label={ariaLabel} {onclick}>{@render children()}</a>
+	<a data-tutorial={tutorialId} data-tutorial-content-id={tutorialContentId} {href} class={cls} aria-label={ariaLabel} {onclick}>{@render children()}</a>
 {:else if onclick}
 	<button type="button" class={[cls, 'w-full text-left']} aria-label={ariaLabel} {onclick}>
 		{@render children()}

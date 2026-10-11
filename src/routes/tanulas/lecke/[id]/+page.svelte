@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getTutorial } from '$lib/tutorial/controller.svelte';
 	import type { PageData } from './$types';
 	import type { LessonDocument } from '$lib/content-protocol';
 	import { Query } from '$lib/query.svelte';
@@ -17,6 +18,11 @@
 	let connected = $state(true);
 	let loadStatus = $state<number | null>(null);
 	let notFound = $derived(loadStatus === 404 || loadStatus === 410);
+	const tutorial = getTutorial();
+	$effect(() => tutorial?.register('lesson-load', {
+		prepare() { if (lessonQ.error) lessonQ.touch(); },
+		close() {}
+	}));
 	const goBack = createBackNavigation(() => resolve('/tanulas'));
 	$effect(() => {
 		const id = data.lessonId;

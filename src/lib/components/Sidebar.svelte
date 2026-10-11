@@ -53,6 +53,7 @@
 			{@const active = isActive(pathname, item.href)}
 			<a
 				href={item.href}
+				data-tutorial={'nav-' + ({ '/': 'home', '/tanulas': 'learning', '/tanterem': 'classroom', '/kartyak': 'cards' }[item.href] ?? '')}
 				aria-current={active ? 'page' : undefined}
 				class={[
 					'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-colors',

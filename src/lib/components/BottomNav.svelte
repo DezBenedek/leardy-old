@@ -31,6 +31,7 @@
 				{@const active = isActive(pathname, item.href)}
 				<a
 					href={item.href}
+				data-tutorial={'nav-' + ({ '/': 'home', '/tanulas': 'learning', '/tanterem': 'classroom', '/kartyak': 'cards' }[item.href] ?? '')}
 					aria-current={active ? 'page' : undefined}
 					class="group flex flex-col items-center gap-1 rounded-xl py-1 transition-colors hover:bg-stone-100 active:bg-stone-100 dark:hover:bg-white/10 dark:active:bg-white/10"
 				>

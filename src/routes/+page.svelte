@@ -164,12 +164,12 @@
 		<p class="header-date">{dateFormat.format(new Date(now))}</p>
 		<h1>Szia{firstName ? `, ${firstName}` : ''}!</h1>
 	</div>
-	<IconButton href={resolve('/beallitasok')} ariaLabel="Beállítások" size={44}>
+	<IconButton tutorialId="settings-open" href={resolve('/beallitasok')} ariaLabel="Beállítások" size={44}>
 		<Settings size={20} />
 	</IconButton>
 </header>
 
-<div class="overview">
+<div class="overview" data-tutorial="home-overview">
 	<section class="next-step" aria-label="Következő teendő">
 		{#if heroLoading}
 			<div class="hero-skeleton" role="status" aria-label="Teendők betöltése">

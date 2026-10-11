@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { getTutorial } from '$lib/tutorial/controller.svelte';
 	import {
 		Bell,
 		BookOpen,
 		BellOff,
 		BellRing,
 		ChevronRight,
+		Compass,
 		Database,
 		HardDrive,
 		Info,
@@ -43,6 +45,7 @@
 	import { theme, type ThemeChoice } from '$lib/theme.svelte';
 	import type { PageData } from './$types';
 
+	const tutorial = getTutorial();
 	let { data }: { data: PageData } = $props();
 
 	type Sheet = null | 'account' | 'notif' | 'theme' | 'learning' | 'cards' | 'storage' | 'about';
@@ -528,6 +531,15 @@
 			<span class="block text-[15px] font-bold text-ink-900 dark:text-white">Tárhely</span>
 			<span class="block truncate text-[13px] text-ink-400 dark:text-stone-500">{storageSummary}</span>
 		</span>
+		<ChevronRight size={19} class="shrink-0 text-stone-300 dark:text-stone-600" />
+	</button>
+	<button
+		data-tutorial="tutorial-reopen"
+		onclick={() => { if (tutorial) tutorial.menuOpen = true; }}
+		class="flex w-full items-center gap-3.5 p-4 text-left transition hover:bg-stone-50 active:bg-stone-100 dark:active:bg-white/10 dark:hover:bg-white/5"
+	>
+		<span class={tile}><Compass size={22} /></span>
+		<span class="min-w-0 flex-1"><span class="block text-[15px] font-bold text-ink-900 dark:text-white">Útmutató</span><span class="block text-[13px] text-ink-400 dark:text-stone-500">Első lépések és részletes bemutatók</span></span>
 		<ChevronRight size={19} class="shrink-0 text-stone-300 dark:text-stone-600" />
 	</button>
 	<button

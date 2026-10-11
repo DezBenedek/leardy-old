@@ -56,10 +56,12 @@
 	import { getOrFetch, peek, invalidate } from '$lib/query.svelte';
 	import { contentFetch, subscribeContent } from '$lib/content-client';
 	import { untrack } from 'svelte';
+	import { getTutorial } from '$lib/tutorial/controller.svelte';
 	import { motionOK } from '$lib/overlay';
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 
+	const tutorial = getTutorial();
 	const COUNTS_TTL = 60 * 60_000;
 	const EDITOR_TREE_TTL = 5 * 60_000;
 
@@ -69,6 +71,8 @@
 		baseSubjectId?: string;
 		/** Nyitáskor erről a tantárgyról indul, a tantárgylistára vissza lehet lépni. */
 		startSubjectId?: string;
+		/** Az útmutató a megőrzött választástól függetlenül nyithatja meg a lépést. */
+		tutorialStep?: 'subject' | 'level';
 		select?: 'lesson' | 'topic' | 'level';
 		/** Szerkesztői használatban a piszkozatokat is tartalmazó adatforrás. */
 		loadTree?: (subjectId: string) => Promise<SubjectTree | null>;
@@ -96,6 +100,7 @@
 		subjects,
 		baseSubjectId = '',
 		startSubjectId = '',
+		tutorialStep,
 		select = 'lesson',
 		loadTree,
 		initialTree = null,
@@ -143,9 +148,14 @@
 
 	// Nyitáskor tiszta lappal indul (a megőrzött választással).
 	let wasOpen = $state(false);
+	let previousTutorialStep: typeof tutorialStep;
+	let previousTutorialSubject = '';
 	$effect(() => {
-		if (open && !wasOpen) {
+		const requestedSubject = tutorialStep === 'level' ? startSubjectId : '';
+		if (open && (!wasOpen || tutorialStep !== previousTutorialStep || requestedSubject !== previousTutorialSubject)) {
 			wasOpen = true;
+			previousTutorialStep = tutorialStep;
+			previousTutorialSubject = requestedSubject;
 			void untrack(start);
 		} else if (!open && wasOpen) {
 			wasOpen = false;
@@ -217,7 +227,7 @@
 	async function start() {
 		reset();
 		if (!loadTree) void ensureSubjectCounts();
-		const initialSubjectId = baseSubjectId || startSubjectId;
+		const initialSubjectId = tutorialStep === 'subject' ? '' : baseSubjectId || startSubjectId;
 		const base = availableSubjects.find((s) => s.id === initialSubjectId) ?? null;
 		if (base) {
 			if (!baseSubjectId) trail = ['subject'];
@@ -399,7 +409,7 @@
 		}
 		return out;
 	});
-	const levelLabel = 'Tananyag';
+	let levelLabel = $derived(subject?.levelLabel || 'Tananyag');
 
 	function pushFirstStep(t: SubjectTree | null) {
 		if (select === 'level') { trail = [...trail, 'level']; return; }
@@ -424,7 +434,10 @@
 		const t = cached ?? await ensureTree(s.id);
 		if (!open || version !== selectionVersion) return;
 		pendingSubjectId = '';
-		if (select === 'level') return;
+		if (select === 'level') {
+			if (t) tutorial?.signal('scope-subject', { subjectId: s.id, levelLabel: s.levelLabel });
+			return;
+		}
 		// Egyszintes fa: a tananyag-lépést átugorjuk.
 		const levels = (t?.levels ?? []).filter((l) => levelPass(l));
 		if (t && levels.length === 1) chooseLevel(levels[0]);
@@ -442,7 +455,7 @@
 		if (select === 'level' && subject) {
 			onPick([{
 				kind: 'level', subjectId: subject.id, subjectTitle: subject.title,
-				levelId: l.id, levelTitle: l.title, levelLabel: 'Tananyag',
+				levelId: l.id, levelTitle: l.title, levelLabel,
 				topicId: '', topicTitle: '', lessonId: '', lessonTitle: '', quizCount: 0,
 				crumb: `${subject.title} - ${l.title}`
 			}]);
@@ -658,6 +671,7 @@
 	title={step === 'level' ? (select === 'level' ? subject?.title ?? levelLabel : levelLabel) : stepTitles[step]}
 	onBack={trail.length > 1 ? goBack : undefined}
 	{onClose}
+	canClose={() => !tutorialStep}
 	wide
 	animateHeight={select === 'level'}
 >
@@ -691,9 +705,10 @@
 					<li>
 						<button
 							type="button"
+							data-tutorial="scope-subject"
 							onclick={() => void chooseSubject(s)}
 							aria-busy={loadingTree && pendingSubjectId === s.id}
-							disabled={loadingTree && pendingSubjectId === s.id}
+							disabled={(loadingTree && pendingSubjectId === s.id) || (!!tutorial?.active && s.lessonCount === 0)}
 							aria-pressed={select === 'level' ? current : undefined}
 							class={['flex w-full items-center gap-2.5 rounded-2xl p-2.5 text-left transition active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100', current ? 'bg-brand-50 dark:bg-brand-500/20' : 'hover:bg-stone-100 dark:hover:bg-white/5']}
 						>
@@ -753,6 +768,8 @@
 					<li>
 						<button
 							type="button"
+							data-tutorial="scope-level"
+							disabled={!!tutorial?.active && !l.materials.some((m) => m.lessons.length > 0)}
 							onclick={() => chooseLevel(l)}
 							aria-pressed={select === 'level' ? current : undefined}
 							class={['flex w-full items-center gap-2.5 rounded-2xl p-2.5 text-left transition active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100', current ? 'bg-brand-50 dark:bg-brand-500/20' : 'hover:bg-stone-100 dark:hover:bg-white/5']}

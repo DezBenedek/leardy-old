@@ -3,6 +3,7 @@
 
 	interface Props {
 		value?: string;
+		tutorialId?: string;
 		placeholder?: string;
 		ariaLabel?: string;
 		disabled?: boolean;
@@ -13,6 +14,7 @@
 	}
 
 	let {
+		tutorialId,
 		value = $bindable(''),
 		placeholder = 'Keresés…',
 		ariaLabel = 'Keresés',
@@ -52,7 +54,7 @@
 	}
 </style>
 
-<div class={['relative min-w-0', expandable ? 'expandable' : 'flex-1']} data-expanded={expanded}>
+<div data-tutorial={tutorialId} class={['relative min-w-0', expandable ? 'expandable' : 'flex-1']} data-expanded={expanded}>
 	<svg
 		width="18"
 		height="18"

@@ -123,6 +123,7 @@ class AuthStore {
 		const res = await api<{ ok?: boolean; error?: string }>('/api/auth/me', { method: 'DELETE' });
 		if (!res) return { ok: false, error: DB_DOWN };
 		if (res.status < 300) {
+			try { if (this.user?.id) localStorage.removeItem('leardy-tutorial:' + this.user.id); } catch { /* A helyi tároló nem elérhető. */ }
 			this.user = null;
 			this.ready = true;
 			clearPersistedCache();

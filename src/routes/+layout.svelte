@@ -5,7 +5,9 @@
 	import { browser, dev } from '$app/environment';
 	import { page } from '$app/state';
 	import { fade } from 'svelte/transition';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
+	import { provideTutorial } from '$lib/tutorial/controller.svelte';
+	import Tutorial from '$lib/components/Tutorial.svelte';
 	import { invalidate } from '$app/navigation';
 	import { isLearningPath } from '$lib/content-protocol';
 	import { startContentSync, invalidateContent, offlineIdentity } from '$lib/content-client';
@@ -27,12 +29,14 @@
 	import { LATEST_CHANGE, getSeenWhatsNew } from '$lib/changelog';
 	import type { LayoutData } from './$types';
 
+	const tutorial = provideTutorial();
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let connected = $state(true);
 	let learningPage = $derived(isLearningPath(page.url.pathname));
 	let offlineLearning = $derived(!connected || data.offline);
 	function reconnect() {
 		connected = true;
+		void tutorial.refresh((user?.role ?? 'student') === 'student' && !user?.is_admin);
 		void invalidate('app:session');
 	}
 	onMount(() => {
@@ -121,7 +125,14 @@
 	if (browser && !auth.ready) auth.seed(data.user ?? null, { offline: data.offline, isEditor: data.isEditor });
 
 	$effect(() => {
-		if (!user) return;
+		const id = user?.id ?? '';
+		const student = (user?.role ?? 'student') === 'student' && !user?.is_admin;
+		untrack(() => { void tutorial.identify(id, student); });
+	});
+	onMount(() => () => tutorial.dispose());
+
+	$effect(() => {
+		if (!user || tutorial.busy || tutorial.offerPending || tutorial.offeredThisSession || tutorial.checking) return;
 		if (getSeenWhatsNew() === LATEST_CHANGE.version) return;
 		const t = setTimeout(() => {
 			whatsNewOpen = true;
@@ -235,4 +246,5 @@
 	<BottomNav />
 	<WhatsNew open={whatsNewOpen} onClose={() => (whatsNewOpen = false)} />
 {/if}
+<Tutorial {tutorial} />
 <Toaster />

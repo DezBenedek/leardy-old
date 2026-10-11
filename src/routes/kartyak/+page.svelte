@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getTutorial } from '$lib/tutorial/controller.svelte';
 	import { mutationFetch } from '$lib/mutation-fetch';
 	import { contentFetch } from '$lib/content-client';
 	import { goto } from '$app/navigation';
@@ -40,6 +41,7 @@
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import Sheet from '$lib/ui/Sheet.svelte';
 
+	const tutorial = getTutorial();
 	/* Könyvtár: csak a saját kártyacsomagok. A kvízek nem részei a Kártyák
 	   területnek: a kvíz a lecke oldalán él, a kártya külön csomagként,
 	   opcionálisan leckéhez csatolva. */
@@ -96,6 +98,10 @@
 	let sortId = $state(loadLibSort());
 	let filterOpen = $state(false);
 	let addOpen = $state(false);
+	$effect(() => tutorial?.register('cards', {
+		prepare(step) { addOpen = step.id === 'cards-discover'; searchFocus = false; },
+		close() { addOpen = false; }
+	}));
 	/** Fókuszban a kereső: a sor gombjai összehúzódnak, a mező szélesre nyílik. */
 	let searchFocus = $state(false);
 	let fPicker = $state<'subject' | 'level' | 'sort' | null>(null);
@@ -448,7 +454,7 @@
 				ariaLabel="Hozzáadás: felfedezés vagy létrehozás"
 				size={46}
 				disabled={searchFocus}
-				onclick={() => (addOpen = true)}
+				tutorialId="cards-add" onclick={() => { addOpen = true; tutorial?.signal('cards-add'); }}
 			>
 				<Plus size={22} />
 			</IconButton>
@@ -456,7 +462,7 @@
 	</div>
 </div>
 
-	<div class="mt-4">
+	<div data-tutorial="cards-overview" class="mt-4">
 		{#if loading}
 			<div role="status" aria-label="Betöltés" class="grid gap-2">
 				{#each [0, 1, 2, 3] as i (i)}
@@ -515,6 +521,7 @@
 		<li>
 			<button
 				type="button"
+				data-tutorial="cards-discover"
 				onclick={() => {
 					addOpen = false;
 					void goto('/kartyak/felfedezes');

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getTutorial } from '$lib/tutorial/controller.svelte';
 	import { mutationFetch } from '$lib/mutation-fetch';
 	import { contentFetch } from '$lib/content-client';
 	import { createBackNavigation } from '$lib/back-navigation';
@@ -25,6 +26,7 @@
 	import Sheet from '$lib/ui/Sheet.svelte';
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 
+	const tutorial = getTutorial();
 	/* Felfedezés: hivatalos kártyacsomagok böngészése és mentése a könyvtárba.
 	   A hivatalos csomag leckénként egy készlet, a kvízektől független tárolásban.
 	   A vissza-nyíl a szűrők mellett balra, cím nélkül. */
@@ -71,6 +73,10 @@
 	}
 
 	let query = $state('');
+	$effect(() => tutorial?.register('discovery', {
+		prepare() { query = ''; savedFilter = 'all'; subjectId = ''; levelId = ''; if (discQ.error) discQ.refresh(); },
+		close() { filterOpen = false; }
+	}));
 	let savedFilter: 'all' | 'new' | 'saved' = $state('all');
 	let sortId = $state(loadDiscSort());
 
@@ -352,7 +358,7 @@
 	</div>
 </div>
 
-<div class="mt-4">
+<div data-tutorial="discovery-overview" class="mt-4">
 	{#if discQ.loading}
 		<div role="status" aria-label="Betöltés" class="grid gap-2">
 			{#each [0, 1, 2, 3] as i (i)}
@@ -390,7 +396,7 @@
 						<Layers size={18} />
 					</span>
 					<a
-						href="/kartyak/{encodeURIComponent(pkg.quizId)}"
+						data-tutorial="package-link" data-tutorial-content-id={pkg.quizId} href="/kartyak/{encodeURIComponent(pkg.quizId)}"
 						onclick={markFromDiscovery}
 						class="min-w-0 flex-1 text-left"
 						aria-label="Megnyitás: {pkg.title}"
@@ -424,7 +430,7 @@
 						</button>
 					{/if}
 					<a
-						href="/kartyak/{encodeURIComponent(pkg.quizId)}"
+						data-tutorial="package-link" data-tutorial-content-id={pkg.quizId} href="/kartyak/{encodeURIComponent(pkg.quizId)}"
 						onclick={markFromDiscovery}
 						aria-label="Megnyitás: {pkg.title}"
 						title="Megnyitás"

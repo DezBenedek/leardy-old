@@ -1507,7 +1507,7 @@ import {
 	</div>
 {/if}
 
-<div class="mt-4 grid min-w-0 gap-2.5 [&>*]:min-w-0">
+<div data-tutorial="room-feed" class="mt-4 grid min-w-0 gap-2.5 [&>*]:min-w-0">
 	{#if feed.length === 0}
 		<EmptyState
 			title="Még nincs bejegyzés"

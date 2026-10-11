@@ -115,6 +115,7 @@ export const DELETE: RequestHandler = async (event) => {
 		'assignment_submissions',
 		'assignment_uploads',
 		'classroom_members',
+		'tutorial_progress',
 		'lesson_progress',
 		'card_progress',
 		'library',

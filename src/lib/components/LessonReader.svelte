@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getTutorial } from '$lib/tutorial/controller.svelte';
 	import { createBackNavigation } from '$lib/back-navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -16,7 +17,8 @@
 	import IconButton from '$lib/ui/IconButton.svelte';
 	import { lessonSections } from '$lib/lesson-content';
 	import LessonContent from './lesson/LessonContent.svelte';
-	let { lessonPage, quizVersion, offline = false, onBusyChange, onBack }: { lessonPage: LessonPage; quizVersion: string; offline?: boolean; onBusyChange?: (busy: boolean) => void; onBack?: () => void } = $props();
+
+	const tutorial = getTutorial();	let { lessonPage, quizVersion, offline = false, onBusyChange, onBack }: { lessonPage: LessonPage; quizVersion: string; offline?: boolean; onBusyChange?: (busy: boolean) => void; onBack?: () => void } = $props();
 
 	let sections = $derived(lessonSections(lessonPage.lesson));
 	let allQuestions = $derived(lessonPage.quizzes.flatMap((q) => q.questions));
@@ -70,6 +72,14 @@
 			.map(({ question }) => question);
 	}
 
+	$effect(() => tutorial?.register('lesson', {
+		prepare() {
+			const first = sections[0];
+			if (first) openSecs[first.slug] = true;
+		},
+		close() { quizModal = null; }
+	}));
+
 	const goBack = createBackNavigation(() => resolve('/tanulas'), {
 		accept: (url) => url.pathname === resolve('/')
 			|| url.pathname === resolve('/tantargy/[id]', { id: lessonPage.subject.id })
@@ -110,7 +120,7 @@
 	</div>
 	{#if allQuestions.length > 0}
 		<IconButton
-			ariaLabel="Teljes lecke kvíz: {allQuestions.length} kérdés"
+			tutorialId="lesson-quiz" ariaLabel="Teljes lecke kvíz: {allQuestions.length} kérdés"
 			title="Teljes lecke kvíz"
 			size={44}
 			onclick={() => openQuiz('Teljes lecke kvíz', allQuestions)}
@@ -127,6 +137,7 @@
 		<div id={section.slug} class="scroll-mt-4 rounded-[20px] border border-stone-200 bg-white transition-shadow dark:border-white/10 dark:bg-stone-900 {open ? 'shadow-sm' : ''}">
 			<div class="flex items-center gap-1 p-1.5">
 				<button
+					data-tutorial="lesson-section"
 					type="button"
 					aria-expanded={open}
 					onclick={() => toggleSection(section.slug)}
@@ -146,7 +157,7 @@
 				</button>
 				{#if count > 0}
 					<IconButton
-						ariaLabel="Szekció kvíz: {count} kérdés"
+						tutorialId="section-quiz" ariaLabel="Szekció kvíz: {count} kérdés"
 						title="Szekció kvíz"
 						size={36}
 						onclick={() =>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getTutorial } from '$lib/tutorial/controller.svelte';
 	import { privateFetch } from '$lib/offline-api';
 	import { mutationFetch } from '$lib/mutation-fetch';
 	import { KeyRound, Plus, Sparkles, Users } from '@lucide/svelte';
@@ -14,6 +15,7 @@
 	import Input from '$lib/ui/Input.svelte';
 	import type { PageData } from './$types';
 
+	const tutorial = getTutorial();
 	let { data }: { data: PageData } = $props();
 
 	interface Room {
@@ -81,6 +83,17 @@
 		if (upper !== joinCode) joinCode = upper;
 	});
 
+	$effect(() => tutorial?.register('classroom', {
+		prepare(step) {
+			if (step.id === 'classroom-code') sheet = 'join';
+			else if (step.id === 'classroom-join') {
+				sheet = teacherMode ? 'choice' : 'join';
+				if (!teacherMode) tutorial?.signal('classroom-join');
+			} else closeSheet();
+		},
+		close: closeSheet
+	}));
+
 	function roomMeta(room: Room): string {
 		const parts: string[] = [];
 		if (room.subject) parts.push(room.subject);
@@ -92,6 +105,8 @@
 
 	function openPlus() {
 		sheet = teacherMode ? 'choice' : 'join';
+		tutorial?.signal('classroom-add');
+		if (!teacherMode) tutorial?.signal('classroom-join');
 	}
 
 	function closeSheet() {
@@ -169,11 +184,11 @@
 	<meta name="description" content="Osztályok, feladatok és dolgozatok." />
 </svelte:head>
 
-<div class="flex items-start justify-between gap-3">
+<div data-tutorial="classroom-overview" class="flex items-start justify-between gap-3">
 	<h1 class="font-display mt-1 text-[24px] leading-tight font-extrabold tracking-tight text-ink-900 sm:text-[28px] dark:text-white">
 		Tanterem
 	</h1>
-	<IconButton ariaLabel="Új osztály vagy csatlakozás" size={46} onclick={openPlus}>
+	<IconButton tutorialId="classroom-add" ariaLabel="Új osztály vagy csatlakozás" size={46} onclick={openPlus}>
 		<Plus size={22} />
 	</IconButton>
 </div>
@@ -181,7 +196,7 @@
 {#if teacherMode && teaching.length > 0}
 	<div class="mt-2 grid gap-2.5">
 		{#each teaching as room (room.id)}
-			<Card href="/tanterem/{room.id}">
+			<Card tutorialId="room-link" tutorialContentId={room.id} href="/tanterem/{room.id}">
 				<div class="flex items-start gap-3">
 					<span class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
 						<Users size={20} />
@@ -210,7 +225,7 @@
 			/>
 		{:else}
 			{#each joined as room (room.id)}
-				<Card href="/tanterem/{room.id}">
+				<Card tutorialId="room-link" tutorialContentId={room.id} href="/tanterem/{room.id}">
 					<div class="flex items-start gap-3">
 						<span class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
 							<Users size={20} />
@@ -250,7 +265,7 @@
 		</button>
 		<button
 			type="button"
-			onclick={() => (sheet = 'join')}
+			data-tutorial="classroom-join" onclick={() => { sheet = 'join'; tutorial?.signal('classroom-join'); }}
 			class="flex w-full items-center gap-3.5 rounded-2xl border border-stone-200 p-4 text-left transition hover:bg-stone-50 active:scale-[0.99] dark:border-white/10 dark:hover:bg-white/5"
 		>
 			<span class={tile}><KeyRound size={22} /></span>
@@ -263,7 +278,7 @@
 </Drawer>
 
 <Drawer open={sheet === 'join'} label="Csatlakozás kóddal" title="Csatlakozás kóddal" onClose={closeSheet}>
-	<form onsubmit={joinRoom} class="mt-3 grid gap-3.5" novalidate>
+	<form data-tutorial="classroom-code" onsubmit={joinRoom} class="mt-3 grid gap-3.5" novalidate>
 		<Input
 			label="Osztály kódja"
 			required

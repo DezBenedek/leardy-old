@@ -29,6 +29,7 @@ export const GET: RequestHandler = async (event) => {
 	return json({
 		exported_at: Date.now(),
 		profile,
+		tutorial_progress: await q('SELECT * FROM tutorial_progress WHERE user_id = ?', user.id),
 		lesson_progress: await q(`SELECT * FROM lesson_progress WHERE user_id = ?`, user.id),
 		card_progress: await q(`SELECT * FROM card_progress WHERE user_id = ?`, user.id),
 		decks: await q(`SELECT * FROM decks WHERE user_id = ?`, user.id),

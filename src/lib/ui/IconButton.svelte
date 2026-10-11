@@ -3,6 +3,7 @@
 
 	interface Props {
 		ariaLabel: string;
+		tutorialId?: string;
 		size?: number;
 		href?: string;
 		disabled?: boolean;
@@ -12,7 +13,7 @@
 		children: Snippet;
 	}
 
-	let { ariaLabel, size = 52, href, disabled = false, tone = 'default', title, onclick, children }: Props = $props();
+	let { tutorialId, ariaLabel, size = 52, href, disabled = false, tone = 'default', title, onclick, children }: Props = $props();
 
 	let cls = $derived(
 		[
@@ -27,11 +28,11 @@
 </script>
 
 {#if href}
-	<a {href} class={cls} style="width:{size}px;height:{size}px" aria-label={ariaLabel} title={title ?? ariaLabel} {onclick}>
+	<a data-tutorial={tutorialId} {href} class={cls} style="width:{size}px;height:{size}px" aria-label={ariaLabel} title={title ?? ariaLabel} {onclick}>
 		{@render children()}
 	</a>
 {:else}
-	<button type="button" class={cls} style="width:{size}px;height:{size}px" aria-label={ariaLabel} title={title ?? ariaLabel} {disabled} {onclick}>
+	<button data-tutorial={tutorialId} type="button" class={cls} style="width:{size}px;height:{size}px" aria-label={ariaLabel} title={title ?? ariaLabel} {disabled} {onclick}>
 		{@render children()}
 	</button>
 {/if}
