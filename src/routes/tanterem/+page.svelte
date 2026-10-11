@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { privateFetch } from '$lib/offline-api';
 	import { mutationFetch } from '$lib/mutation-fetch';
 	import { KeyRound, Plus, Sparkles, Users } from '@lucide/svelte';
 	import { auth } from '$lib/auth.svelte';
@@ -28,14 +29,14 @@
 	let teaching = $state<Room[]>([]);
 	let joined = $state<Room[]>([]);
 	let teacherMode = $state(false);
-	let seeded = $state(false);
+	let seededData: PageData | undefined;
 
 	$effect(() => {
-		if (!seeded) {
+		if (seededData !== data) {
 			teaching = [...data.teaching];
 			joined = [...data.joined];
 			teacherMode = data.isTeacher || auth.user?.role === 'teacher';
-			seeded = true;
+			seededData = data;
 		} else if (auth.user?.role === 'teacher') {
 			teacherMode = true;
 		}
@@ -149,7 +150,7 @@
 			joinCode = '';
 			sheet = null;
 			toast.success('Csatlakoztál', j.name ?? '');
-			const list = await fetch('/api/classrooms').then((r) => r.json().catch(() => ({})));
+			const list = await privateFetch('/api/classrooms').then((r) => r.json().catch(() => ({})));
 			if (list.joined) joined = list.joined;
 			if (list.teaching) teaching = list.teaching;
 		} catch {
@@ -204,8 +205,8 @@
 	<div class="mt-2 grid gap-2.5">
 		{#if joined.length === 0}
 			<EmptyState
-				title="Még nem csatlakoztál osztályhoz"
-				description="Kérd el a tanárodtól a 6 karakteres kódot, majd koppints fent a + gombra."
+				title={data.offline ? 'Nincs helyben tárolt tanterem' : 'Még nem csatlakoztál osztályhoz'}
+				description={data.offline ? 'Nyisd meg a tantermet egyszer internetkapcsolattal, hogy később offline is elérhesd.' : 'Kérd el a tanárodtól a 6 karakteres kódot, majd koppints fent a + gombra.'}
 			/>
 		{:else}
 			{#each joined as room (room.id)}
@@ -228,8 +229,8 @@
 {#if teacherMode && teaching.length === 0 && joined.length === 0}
 	<div class="mt-4">
 		<EmptyState
-			title="Még nincs osztályod"
-			description="Hozd létre az elsőt a + gombbal, majd oszd meg a kódot a diákokkal."
+			title={data.offline ? 'Nincs helyben tárolt tanterem' : 'Még nincs osztályod'}
+			description={data.offline ? 'Nyisd meg a tantermet egyszer internetkapcsolattal, hogy később offline is elérhesd.' : 'Hozd létre az elsőt a + gombbal, majd oszd meg a kódot a diákokkal.'}
 		/>
 	</div>
 {/if}

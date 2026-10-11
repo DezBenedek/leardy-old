@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { privateFetch } from '$lib/offline-api';
 	import { Download, Search } from '@lucide/svelte';
 	import Drawer from '$lib/components/Drawer.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -68,7 +69,7 @@
 		loading = true;
 		failed = false;
 		try {
-			const res = await fetch(`/api/classrooms/${classroomId}/stats`);
+			const res = await privateFetch(`/api/classrooms/${classroomId}/stats`);
 			const j = await res.json().catch(() => ({}));
 			if (!res.ok) throw new Error(j.error ?? 'Hiba történt.');
 			stats = j as Stats;

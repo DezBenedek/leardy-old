@@ -11,8 +11,6 @@ import {
 export const GET: RequestHandler = async (event) => {
 	const db = getDb(event);
 	if (!db) return json({ error: 'Az adatbázis most nem elérhető.' }, { status: 503 });
-	await ensureAuthSchema(db);
-	await ensureClassroomSchema(db);
 	const user = await requireUser(event, db);
 	if (!user) return json({ error: 'Jelentkezz be!' }, { status: 401 });
 
@@ -30,7 +28,7 @@ export const GET: RequestHandler = async (event) => {
 			)
 			.bind(user.id)
 			.all<Classroom>();
-		return json({ teaching: teaching.results ?? [], joined: [] });
+		return json({ teaching: teaching.results ?? [], joined: [], isTeacher: true }, { headers: { 'cache-control': 'private, no-store', 'x-content-owner': user.id } });
 	}
 
 	const joined = await db
@@ -47,7 +45,7 @@ export const GET: RequestHandler = async (event) => {
 		)
 		.bind(user.id)
 		.all<Classroom>();
-	return json({ teaching: [], joined: joined.results ?? [] });
+	return json({ teaching: [], joined: joined.results ?? [], isTeacher: false }, { headers: { 'cache-control': 'private, no-store', 'x-content-owner': user.id } });
 };
 
 /* Tanterem létrehozása: csak tanár. Body: { name, subject?, description? } */

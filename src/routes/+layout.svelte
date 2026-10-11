@@ -7,7 +7,7 @@
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { invalidate } from '$app/navigation';
-	import { isLearningPath, isOfflinePath } from '$lib/content-protocol';
+	import { isLearningPath } from '$lib/content-protocol';
 	import { startContentSync, invalidateContent, offlineIdentity } from '$lib/content-client';
 	import { startProgressSync, syncProgress, outbox, dismissProgress } from '$lib/progress-outbox.svelte';
 	import { startPwaUpdates } from '$lib/pwa-client';
@@ -30,7 +30,7 @@
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let connected = $state(true);
 	let learningPage = $derived(isLearningPath(page.url.pathname));
-	let offlineLearning = $derived(isOfflinePath(page.url.pathname) && (!connected || data.offline));
+	let offlineLearning = $derived(!connected || data.offline);
 	function reconnect() {
 		connected = true;
 		void invalidate('app:session');
@@ -69,7 +69,7 @@
 		const current = auth.ready ? auth.user : data.user;
 		if (current || !offlineLearning) return current;
 		const remembered = offlineIdentity();
-		return remembered ? { ...remembered, email: '' } : null;
+		return remembered ? { ...remembered, email: remembered.email ?? '' } : null;
 	});
 
 	// PWA: a web manifest link a head-be, a service worker regisztracio kliensoldalon.
@@ -118,7 +118,7 @@
 	// Kliens indulaskor azonnal szinkronizalunk, hogy a gyerekek
 	// (Sidebar, fooldal) mar az elso paintkor latjak a usert.
 	// svelte-ignore state_referenced_locally: szandekosan csak a kezdeti ertek kell.
-	if (browser && !auth.ready && !data.offline) auth.seed(data.user ?? null);
+	if (browser && !auth.ready) auth.seed(data.user ?? null, { offline: data.offline, isEditor: data.isEditor });
 
 	$effect(() => {
 		if (!user) return;
@@ -132,7 +132,7 @@
 	// A session szerverről jön: paint előtt beáll, splash nincs.
 	// Kliensoldali navigációnál a friss layout-adat szinkronizál.
 	$effect.pre(() => {
-		if (!data.offline) auth.seed(data.user ?? null);
+		auth.seed(data.user ?? null, { offline: data.offline, isEditor: data.isEditor });
 	});
 	$effect(() => { if (user?.id) void syncProgress(); });
 
@@ -174,7 +174,7 @@
 	}
 </script>
 
-<svelte:window onoffline={() => connected = false} ononline={reconnect} />
+<svelte:window onoffline={() => connected = false} ononline={reconnect} onfocus={() => { if (data.offline && navigator.onLine) reconnect(); }} />
 
 <svelte:head>
 	<title>Leardy: Tanulj okosan</title>
@@ -223,6 +223,7 @@
 					class="mx-auto w-full max-w-3xl px-4 pt-5 pb-36 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12"
 				>
 						{@render progressNotices()}
+					{#if offlineLearning}<p role="status" class="mb-3 text-sm text-stone-500">Offline vagy. A korábban betöltött tartalmakat látod.</p>{/if}
 					{@render children()}
 				</main>
 			{/key}

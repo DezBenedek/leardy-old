@@ -1,5 +1,5 @@
 import { error, redirect, type NumericRange } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import type { RequestEvent } from '@sveltejs/kit';
 import { getDb, getSessionUser } from '$lib/server/db';
 import type { AssignmentUpload, ClassAssignment } from '$lib/server/classroom';
 
@@ -17,13 +17,14 @@ export interface AssignmentResultRow {
 	uploads: AssignmentUpload[];
 }
 
-export const load: PageServerLoad = async (event) => {
+export const loadClassroomAssignmentPage = async (event: RequestEvent) => {
 	const db = getDb(event);
 	if (!db) throw error(503 as NumericRange<400, 599>, 'Az adatbázis most nem elérhető.');
 	const user = await getSessionUser(event, db);
 	if (!user) throw error(401 as NumericRange<400, 599>, 'Jelentkezz be!');
-	const roomId = event.params.id;
-	const aid = event.params.aid;
+	event.setHeaders({ 'x-content-owner': user.id });
+	const roomId = event.params.id ?? '';
+	const aid = event.params.aid ?? '';
 
 	const room = await db
 		.prepare(`SELECT id, teacher_id, name FROM classrooms WHERE id = ?`)

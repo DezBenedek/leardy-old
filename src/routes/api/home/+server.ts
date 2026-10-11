@@ -14,7 +14,7 @@ export const GET: RequestHandler = async (event) => {
 			getSuggestions(event, user.id)
 		]);
 		// Élő személyes adat: HTTP-gyorstárba nem kerül.
-		return json({ ...stats, suggestions }, { headers: { 'cache-control': 'private, no-store' } });
+		return json({ ...stats, suggestions }, { headers: { 'cache-control': 'private, no-store', 'x-content-owner': user.id } });
 	} catch (e) {
 		return json(
 			{ error: e instanceof Error ? e.message : 'Nem sikerült betölteni a kezdőlapot.' },

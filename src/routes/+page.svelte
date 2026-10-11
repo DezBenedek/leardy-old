@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { privateFetch } from '$lib/offline-api';
 	import { resolve } from '$app/paths';
 	import { ArrowRight, BookOpen, CalendarDays, Check, ChevronRight, ClipboardCheck, Flame, Languages, Minus, Settings } from '@lucide/svelte';
 	import { onMount } from 'svelte';
@@ -59,7 +60,7 @@
 	homeQ.prime('home', HOME_STALE);
 	function loadHome() {
 		homeQ.load('home', async () => {
-			const res = await fetch('/api/home');
+			const res = await privateFetch('/api/home');
 			if (!res.ok) throw new Error('Nem sikerült betölteni az aktivitást.');
 			return res.json();
 		}, HOME_TTL, HOME_STALE);
@@ -69,7 +70,7 @@
 	tasksQ.prime('home-tasks', HOME_STALE);
 	function loadTasks() {
 		tasksQ.load('home-tasks', async () => {
-			const res = await fetch('/api/home/tasks');
+			const res = await privateFetch('/api/home/tasks');
 			if (!res.ok) throw new Error('Nem sikerült betölteni a feladatokat.');
 			return res.json();
 		}, HOME_TTL, HOME_STALE);
@@ -79,7 +80,7 @@
 	wordsQ.prime('sm2-due', HOME_STALE);
 	function loadWords() {
 		wordsQ.load('sm2-due', async () => {
-			const res = await fetch('/api/sm2-due');
+			const res = await privateFetch('/api/sm2-due');
 			if (!res.ok) throw new Error('Nem sikerült betölteni a szavakat.');
 			return res.json();
 		}, HOME_TTL, HOME_STALE);

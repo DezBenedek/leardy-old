@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { CONTENT_CACHE, PRIVATE_CACHE_PREFIX, contentUrl, isContentUrl, isOfflinePath, type ContentMessage } from './lib/content-protocol';
+import { CONTENT_CACHE, PRIVATE_CACHE_PREFIX, PRIVATE_APP_CACHE_PREFIX, contentUrl, isContentUrl, isOfflinePath, type ContentMessage } from './lib/content-protocol';
 
 declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: { url: string; revision: string | null }[] };
 declare const __APP_BUILD_TIME__: string;
@@ -244,7 +244,9 @@ self.addEventListener('message', (event) => {
 			for (const key of volatile.keys()) if (key.startsWith(PRIVATE_CACHE_PREFIX)) volatile.delete(key);
 		} else volatile.clear();
 		const run = generation;
-		const names = (await caches.keys()).filter((k) => k.startsWith(PRIVATE_CACHE_PREFIX) || (event.data.type === 'invalidate-content' && k === CONTENT_CACHE));
+		const names = (await caches.keys()).filter((k) => k.startsWith(PRIVATE_CACHE_PREFIX)
+			|| (event.data.type === 'clear-private-content' && k.startsWith(PRIVATE_APP_CACHE_PREFIX))
+			|| (event.data.type === 'invalidate-content' && k === CONTENT_CACHE));
 		// Nyilvános leckék megmaradnak offline olvasásra; a következő kérés ellenőrzi őket.
 		if (event.data.type === 'invalidate-content') {
 			const change = event.data.change;
@@ -316,11 +318,13 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 	if (req.mode === 'navigate') {
-		event.respondWith(fetch(req).catch(async () => {
-			if (isOfflinePath(url.pathname)) return (await (await caches.open(CACHE)).match('/tanulas')) ?? Response.error();
-			if (url.pathname === '/') return Response.redirect(new URL('/tanulas', self.location.origin));
-			return Response.error();
-		}));
+		const shell = async () => {
+			try {
+				if (isOfflinePath(url.pathname)) return await (await caches.open(CACHE)).match('/tanulas');
+			} catch { /* Helyi tár nélkül nincs offline alkalmazásváz. */ }
+		};
+		event.respondWith(fetch(req).then(async (response) => response.status >= 500 ? await shell() ?? response : response)
+			.catch(async () => await shell() ?? Response.error()));
 		return;
 	}
 	if (url.pathname.startsWith('/api/')) return;

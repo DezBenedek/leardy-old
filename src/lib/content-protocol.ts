@@ -3,6 +3,7 @@ import type { LessonPage } from './curriculum';
 export interface LessonDocument { lessonPage: LessonPage; quizVersion: string; contentVersion: number }
 export const CONTENT_CACHE = 'leardy-content-v2';
 export const PRIVATE_CACHE_PREFIX = 'leardy-private-v2:';
+export const PRIVATE_APP_CACHE_PREFIX = 'leardy-offline-api-v1:';
 export const CONTENT_EVENT = 'leardy-content';
 export const IDENTITY_KEY = 'leardy-offline-user-v1';
 
@@ -29,5 +30,8 @@ export function isLearningPath(pathname: string): boolean {
 }
 
 export function isOfflinePath(pathname: string): boolean {
-	return isLearningPath(pathname) || /^\/kartyak(?:\/[^/]+)?\/?$/.test(pathname) || /^\/tantargy\/[^/]+\/?$/.test(pathname);
+	return pathname === '/' || pathname === '/beallitasok' || isLearningPath(pathname)
+		|| /^\/kartyak(?:\/[^/]+)?\/?$/.test(pathname) || /^\/tantargy\/[^/]+\/?$/.test(pathname)
+		|| /^\/szavak\/[^/]+\/?$/.test(pathname)
+		|| /^\/tanterem(?:\/[^/]+(?:\/(?:feladat|beadando)\/[^/]+)?)?\/?$/.test(pathname);
 }

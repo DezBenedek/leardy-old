@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { privateFetch } from '$lib/offline-api';
 	import { mutationFetch } from '$lib/mutation-fetch';
 	import { createBackNavigation } from '$lib/back-navigation';
 	import { lessonPath } from '$lib/lesson-paths';
@@ -130,6 +131,7 @@ import {
 	let displaySubject = $state('');
 	let displayCode = $state('');
 	let seeded = $state(false);
+	let seededData: PageData | undefined;
 
 	type FeedItem =
 		| { kind: 'message'; ts: number; msg: FeedMessage }
@@ -235,7 +237,7 @@ import {
 	async function loadMineMap() {
 		if (data.own) return;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/submissions/mine`);
+			const res = await privateFetch(`/api/classrooms/${room.id}/submissions/mine`);
 			const j = await res.json().catch(() => ({}));
 			if (res.ok && j.mine) myMap = j.mine;
 			if (res.ok && j.assignments) assignmentMap = j.assignments;
@@ -247,7 +249,7 @@ import {
 	async function loadTaskResults(taskId: string) {
 		resultsLoading = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/tasks/${taskId}/submissions`);
+			const res = await privateFetch(`/api/classrooms/${room.id}/tasks/${taskId}/submissions`);
 			const j = await res.json().catch(() => ({}));
 			if (!res.ok) return;
 			if (data.own && Array.isArray(j.results)) taskResults = j.results;
@@ -425,7 +427,7 @@ import {
 		if (quizLoading) return;
 		quizLoading = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/tasks/${task.id}/quiz`);
+			const res = await privateFetch(`/api/classrooms/${room.id}/tasks/${task.id}/quiz`);
 			const j = await res.json().catch(() => ({}));
 			if (!res.ok) {
 				toast.error('Nem sikerült összeállítani', j.error ?? 'Próbáld újra!');
@@ -472,7 +474,7 @@ import {
 	}
 
 	$effect(() => {
-		if (!seeded) {
+		if (seededData !== data) {
 			messages = [...data.messages];
 			tasks = [...data.tasks];
 			assignments = [...(data.assignments ?? [])];
@@ -481,6 +483,7 @@ import {
 			displaySubject = data.room.subject ?? '';
 			displayCode = data.room.code;
 			seeded = true;
+			seededData = data;
 			void loadMineMap();
 		}
 	});
@@ -698,7 +701,7 @@ import {
 				msgError = j.error ?? 'Nem sikerült elküldeni.';
 				return;
 			}
-			const list = await fetch(`/api/classrooms/${room.id}/content`).then((r) =>
+			const list = await privateFetch(`/api/classrooms/${room.id}/content`).then((r) =>
 				r.json().catch(() => ({}))
 			);
 			if (Array.isArray(list.messages)) messages = list.messages;
@@ -799,7 +802,7 @@ import {
 				taskError = j.error ?? 'Nem sikerült létrehozni.';
 				return;
 			}
-			const list = await fetch(`/api/classrooms/${room.id}/content`).then((r) =>
+			const list = await privateFetch(`/api/classrooms/${room.id}/content`).then((r) =>
 				r.json().catch(() => ({}))
 			);
 			if (Array.isArray(list.tasks)) tasks = list.tasks;
@@ -922,7 +925,7 @@ import {
 	}
 
 	async function refreshAssignments() {
-		const list = await fetch(`/api/classrooms/${room.id}/content`).then((r) =>
+		const list = await privateFetch(`/api/classrooms/${room.id}/content`).then((r) =>
 			r.json().catch(() => ({}))
 		);
 		if (Array.isArray(list.assignments)) assignments = list.assignments;
@@ -1077,7 +1080,7 @@ import {
 	async function loadAssignmentDetail(aid: string) {
 		assignmentLoading = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/assignments/${aid}/submissions`);
+			const res = await privateFetch(`/api/classrooms/${room.id}/assignments/${aid}/submissions`);
 			const j = await res.json().catch(() => ({}));
 			if (!res.ok) return;
 			if (data.own && Array.isArray(j.results)) {

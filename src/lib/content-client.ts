@@ -3,7 +3,10 @@ import { CONTENT_EVENT, IDENTITY_KEY, type ContentMessage } from './content-prot
 import { readStoredContent, storeContent } from './content-storage';
 import { offlineLibraryResponse, writeOfflineLibrary } from './offline-library';
 
-export interface OfflineIdentity { id: string; name: string }
+export interface OfflineIdentity {
+	id: string; name: string; email?: string; role?: string; school_id?: string;
+	xp?: number; streak?: number; is_admin?: number; isEditor?: boolean;
+}
 
 export function offlineIdentity(): OfflineIdentity | null {
 	if (!browser) return null;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { privateFetch } from '$lib/offline-api';
 	import { mutationFetch } from '$lib/mutation-fetch';
 	import { CalendarDays, Check, ChevronRight, FileText, Paperclip, Plus, Send, Undo2, X } from '@lucide/svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -155,7 +156,7 @@
 	async function loadDetail(a: AssignmentDetail) {
 		loading = true;
 		try {
-			const res = await fetch(`/api/classrooms/${a.classroomId}/assignments/${a.id}/submissions`);
+			const res = await privateFetch(`/api/classrooms/${a.classroomId}/assignments/${a.id}/submissions`);
 			const j = await res.json().catch(() => ({}));
 			if (!res.ok) return;
 			if (a.own && Array.isArray(j.results)) {

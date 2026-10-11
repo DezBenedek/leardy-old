@@ -3,6 +3,7 @@ import { browser } from '$app/environment';
 import { onDestroy, untrack } from 'svelte';
 import { subscribeContent } from './content-client';
 import type { ContentMessage } from './content-protocol';
+import { PRIVATE_APP_CACHE_PREFIX, PRIVATE_CACHE_PREFIX } from './content-protocol';
 
 type Fetcher<T> = (cacheOnly?: boolean) => Promise<T>;
 interface Entry { data: unknown; at: number }
@@ -29,7 +30,9 @@ export function clearPersistedCache(): void {
 		for (const key of Object.keys(localStorage)) if (key.startsWith('leardy:q:') || key.startsWith('leardy-library')) localStorage.removeItem(key);
 	} catch { /* A tárhely letiltható. */ }
 	navigator.serviceWorker?.controller?.postMessage({ type: 'clear-private-content' });
-	if (typeof caches !== 'undefined') void caches.delete('leardy-api-v1').catch(() => undefined);
+	if (typeof caches !== 'undefined') void caches.keys().then((names) => Promise.all(names
+		.filter((name) => name === 'leardy-api-v1' || name.startsWith(PRIVATE_APP_CACHE_PREFIX) || name.startsWith(PRIVATE_CACHE_PREFIX))
+		.map((name) => caches.delete(name)))).catch(() => undefined);
 }
 
 export async function getOrFetch<T>(key: string, fetcher: Fetcher<T>, ttlMs = 60_000, _persistMs = 0, force = false, cacheOnly = false): Promise<T> {

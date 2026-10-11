@@ -7,6 +7,7 @@ import ts from 'typescript';
 
 const source = (await readFile(new URL('../src/lib/query.svelte.ts', import.meta.url), 'utf8'))
 	.replace("import { browser } from '$app/environment';", 'const browser = true;')
+	.replace("import { PRIVATE_APP_CACHE_PREFIX, PRIVATE_CACHE_PREFIX } from './content-protocol';", "const PRIVATE_APP_CACHE_PREFIX = 'leardy-offline-api-v1:'; const PRIVATE_CACHE_PREFIX = 'leardy-private-v2:';")
 	.replace("import { onDestroy, untrack } from 'svelte';", "import { untrack } from 'svelte'; const onDestroy = () => {};")
 	.replace("import { subscribeContent } from './content-client';", `
 		const contentListeners = new Set();

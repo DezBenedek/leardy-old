@@ -215,7 +215,7 @@ export const GET: RequestHandler = async (event) => {
 
 		return json(
 			{ today, languages },
-			{ headers: { 'cache-control': 'private, no-store' } }
+			{ headers: { 'cache-control': 'private, no-store', 'x-content-owner': user.id } }
 		);
 	} catch (e) {
 		return json(

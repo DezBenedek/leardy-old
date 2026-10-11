@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { privateFetch } from '$lib/offline-api';
 	import { mutationFetch } from '$lib/mutation-fetch';
 	import { lessonPath } from '$lib/lesson-paths';
 	import { CalendarDays, Check, ListChecks, RotateCcw, Send, Undo2 } from '@lucide/svelte';
@@ -82,7 +83,7 @@
 	async function loadState(t: TaskDetail) {
 		resultsLoading = true;
 		try {
-			const res = await fetch(`/api/classrooms/${t.classroomId}/tasks/${t.id}/submissions`);
+			const res = await privateFetch(`/api/classrooms/${t.classroomId}/tasks/${t.id}/submissions`);
 			const j = await res.json().catch(() => ({}));
 			if (!res.ok) return;
 			if (t.own) taskResults = (j.results ?? []) as TaskResultRow[];
@@ -115,7 +116,7 @@
 		if (!t || quizLoading) return;
 		quizLoading = true;
 		try {
-			const res = await fetch(`/api/classrooms/${t.classroomId}/tasks/${t.id}/quiz`);
+			const res = await privateFetch(`/api/classrooms/${t.classroomId}/tasks/${t.id}/quiz`);
 			const j = await res.json().catch(() => ({}));
 			if (!res.ok) {
 				toast.error('Nem sikerült összeállítani', j.error ?? 'Próbáld újra!');

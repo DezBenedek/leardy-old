@@ -43,6 +43,7 @@ export const GET: RequestHandler = async (event) => {
 	await ensureClassContentSchema(db);
 	const user = await requireUser(event, db);
 	if (!user) return json({ error: 'Jelentkezz be!' }, { status: 401 });
+	event.setHeaders({ 'x-content-owner': user.id, 'cache-control': 'private, no-store' });
 	const classroomId = event.params.id ?? '';
 	const taskId = event.params.taskId ?? '';
 

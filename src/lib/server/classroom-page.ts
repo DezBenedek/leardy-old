@@ -1,5 +1,5 @@
 import { error, type NumericRange } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import type { RequestEvent } from '@sveltejs/kit';
 import { getDb, getSessionUser } from '$lib/server/db';
 import {
 	getMessageRefs,
@@ -10,13 +10,14 @@ import {
 	type ClassTask
 } from '$lib/server/classroom';
 
-export const load: PageServerLoad = async (event) => {
+export const loadClassroomPage = async (event: RequestEvent) => {
 	const db = getDb(event);
 	if (!db) throw error(503 as NumericRange<400, 599>, 'Az adatbázis most nem elérhető.');
 	// Nincs ensure*: az olvasást nem blokkoljuk DDL-körökkel.
 	const user = await getSessionUser(event, db);
 	if (!user) throw error(401 as NumericRange<400, 599>, 'Jelentkezz be!');
-	const id = event.params.id;
+	event.setHeaders({ 'x-content-owner': user.id });
+	const id = event.params.id ?? '';
 
 	const room = await db
 		.prepare(

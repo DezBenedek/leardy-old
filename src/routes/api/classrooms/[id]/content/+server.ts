@@ -14,6 +14,7 @@ export const GET: RequestHandler = async (event) => {
 	if (!db) return json({ error: 'Az adatbázis most nem elérhető.' }, { status: 503 });
 	const user = await requireUser(event, db);
 	if (!user) return json({ error: 'Jelentkezz be!' }, { status: 401 });
+	event.setHeaders({ 'x-content-owner': user.id, 'cache-control': 'private, no-store' });
 	const id = event.params.id ?? '';
 
 	const room = await db

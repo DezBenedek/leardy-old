@@ -112,7 +112,7 @@ export const GET: RequestHandler = async (event) => {
 
 		return json(
 			{ tasks, grading },
-			{ status: 200, headers: { 'cache-control': 'private, no-store' } }
+			{ status: 200, headers: { 'cache-control': 'private, no-store', 'x-content-owner': user.id } }
 		);
 	} catch (e) {
 		return json(

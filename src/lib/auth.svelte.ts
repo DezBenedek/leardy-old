@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { untrack } from 'svelte';
 import { clearPersistedCache } from './query.svelte';
 import { offlineIdentity, rememberIdentity } from './content-client';
 
@@ -67,11 +68,22 @@ class AuthStore {
 	 * hívja, minden kliensoldali navigációnál pedig szinkronizál,
 	 * ezért induló töltés (splash) nincs.
 	 */
-	seed(u: User | null): void {
+	seed(u: User | null, options: { offline?: boolean; isEditor?: boolean } = {}): void {
+		if (options.offline) {
+			const remembered = browser ? offlineIdentity() : null;
+			untrack(() => {
+				if (!this.ready) this.user = remembered ? { ...remembered, email: remembered.email ?? '' } : u;
+			});
+			this.ready = true;
+			return;
+		}
 		if (browser) {
 			const previous = offlineIdentity()?.id;
 			if (previous && previous !== u?.id) clearPersistedCache();
-			rememberIdentity(u?.id ? { id: u.id, name: u.name } : null);
+			rememberIdentity(u?.id ? {
+				id: u.id, name: u.name, email: u.email, role: u.role, school_id: u.school_id,
+				xp: u.xp, streak: u.streak, is_admin: u.is_admin, isEditor: options.isEditor ?? false
+			} : null);
 		}
 		this.user = u;
 		this.ready = true;
@@ -101,8 +113,7 @@ class AuthStore {
 		});
 		if (!res) return { ok: false, error: DB_DOWN };
 		if (res.status < 300 && res.data.user) {
-			this.user = res.data.user;
-			this.ready = true;
+			this.seed(res.data.user, { isEditor: offlineIdentity()?.isEditor });
 			return { ok: true };
 		}
 		return { ok: false, error: res.data.error ?? 'Hiba történt. Próbáld újra!' };

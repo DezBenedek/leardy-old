@@ -95,15 +95,22 @@ test('Változó URL-ről nem tér vissza korábbi kiadás elavult adata', async 
 test('Offline újratöltéskor a Tanulás és a lecke saját URL-jén az alkalmazásváz töltődik be', async () => {
 	const h = harness(async () => { throw new TypeError('Nincs hálózat.'); });
 	await (await h.caches.open(currentCache)).put('/tanulas', new Response('learning shell'));
-	for (const path of ['/tanulas', '/tanulas?kereses=honfoglalás', '/tanulas/lecke/lesson#szakasz', '/tanulas/lecke/lesson/', '/kartyak', '/kartyak/pack%3Asaved', '/kartyak/deck%3Amine', '/tantargy/english']) {
+	for (const path of ['/', '/beallitasok', '/szavak/english', '/tanterem', '/tanterem/room', '/tanterem/room/feladat/task', '/tanterem/room/beadando/assignment', '/tanulas', '/tanulas?kereses=honfoglalás', '/tanulas/lecke/lesson#szakasz', '/tanulas/lecke/lesson/', '/kartyak', '/kartyak/pack%3Asaved', '/kartyak/deck%3Amine', '/tantargy/english']) {
 		const response = await h.fetch(path, true);
 		assert.equal(response.status, 200);
 		assert.equal(response.headers.get('location'), null);
 		assert.equal(await response.text(), 'learning shell');
 	}
 	assert.equal((await h.fetch('/tanulas/szerkeszto', true)).type, 'error');
-	const home = await h.fetch('/', true);
-	assert.equal(home.headers.get('location'), `${origin}/tanulas`);
+});
+
+test('Átmeneti szerverhiba esetén is az offline alkalmazásváz indul, valódi jogosultsághibát nem fed el', async () => {
+	let status = 503;
+	const h = harness(async () => new Response('szerverválasz', { status }));
+	await (await h.caches.open(currentCache)).put('/tanulas', new Response('offline shell'));
+	assert.equal(await (await h.fetch('/tanterem/room', true)).text(), 'offline shell');
+	status = 403;
+	assert.equal((await h.fetch('/tanterem/room', true)).status, 403);
 });
 
 test('Tiltott vagy sérült Cache Storage mellett az online alkalmazás betöltődik', async () => {
