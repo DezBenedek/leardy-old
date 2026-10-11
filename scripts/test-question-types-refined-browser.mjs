@@ -193,12 +193,15 @@ await state.page.setViewportSize({ width: 1000, height: 1000 });
 
 await state.page.route('**/__question-map-image__.svg', (route) => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="560"><rect width="400" height="560" fill="black"/><rect x="400" width="400" height="560" fill="white"/></svg>' }));
 await mountFixture({ type: 'map', mode: 'editor', inDrawer: true });
-await state.page.locator('[data-map-canvas] svg[style*="normal"]').waitFor();
-assert.equal(await state.page.locator('[data-map-canvas] linearGradient stop').first().getAttribute('stop-color'), '#fff');
+await state.page.locator('[data-map-arrow="elso"][stroke="#fff"]').waitFor();
+assert.equal(await state.page.locator('[data-map-canvas] marker path').first().getAttribute('fill'), '#fff');
+assert.equal(await state.page.locator('[data-map-canvas] circle').first().getAttribute('fill'), '#fff');
+assert.equal(await state.page.locator('[data-map-canvas] linearGradient').count(), 0);
 const arrowHandle = button('1. nyílpont mozgatása');
 for (let index = 0; index < 10; index++) { await arrowHandle.press('Shift+ArrowRight'); await observe(); }
-assert.equal(await state.page.locator('[data-map-canvas] linearGradient stop').first().getAttribute('stop-color'), '#000');
-assert.equal(await state.page.locator('[data-map-canvas] linearGradient stop').last().getAttribute('stop-color'), '#fff');
+assert.equal(await state.page.locator('[data-map-arrow="elso"]').getAttribute('stroke'), '#000');
+assert.equal(await state.page.locator('[data-map-canvas] marker path').first().getAttribute('fill'), '#000');
+assert.equal(await state.page.locator('[data-map-canvas] circle').first().getAttribute('fill'), '#000');
 
 await mountFixture({ type: 'map', mode: 'editor', inDrawer: true });
 await checkArrows();

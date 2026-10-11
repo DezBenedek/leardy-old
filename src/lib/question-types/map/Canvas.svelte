@@ -60,22 +60,18 @@
 <div {@attach measure} data-map-canvas class="relative isolate w-full rounded-xl border border-stone-200 bg-stone-100 dark:border-white/15 dark:bg-white/5">
 	<img {src} onerror={() => (failedSrc = src)} alt="A vaktérkép alapképe" draggable="false" onload={(event) => { failedSrc = ''; imageData = { src, pixels: readImagePixels(event.currentTarget as HTMLImageElement) }; }} referrerpolicy="no-referrer" class={['block h-auto w-full rounded-xl', failedSrc === src && 'min-h-32']} />
 	{#if failedSrc === src}<p role="alert" class="absolute inset-0 grid place-items-center rounded-xl bg-stone-50 p-4 text-center text-sm text-stone-500 dark:bg-stone-900 dark:text-stone-400">A vaktérkép képe nem tölthető be.</p>{/if}
-	<svg class="pointer-events-none absolute inset-0 size-full overflow-visible" style:mix-blend-mode={pixels ? 'normal' : 'difference'} viewBox={`0 0 ${size.width} ${size.height}`} aria-hidden="true">
+	<svg class="pointer-events-none absolute inset-0 size-full overflow-visible" viewBox={`0 0 ${size.width} ${size.height}`} aria-hidden="true">
 		{#each boxes as box (box.id)}
 			{#if box.arrow}
 				{@const end = boxArrowEnd(box, size.width, size.height)}
 				{@const start = { x: box.arrow.x * size.width / 100, y: box.arrow.y * size.height / 100 }}
-				{@const stops = arrowContrast(pixels, start, end, size.width, size.height)}
-				{@const gradientId = `${instanceId}-${box.id}-contrast`}
+				{@const color = arrowContrast(pixels, start, end, size.width, size.height)}
 				{@const markerId = `${instanceId}-${box.id}-arrow`}
 				<defs>
-					<linearGradient id={gradientId} gradientUnits="userSpaceOnUse" x1={start.x} y1={start.y} x2={end.x} y2={end.y}>
-						{#each stops as stop, index (index)}<stop offset={stop.offset} stop-color={stop.color} />{/each}
-					</linearGradient>
-					<marker id={markerId} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill={stops.at(-1)?.color} /></marker>
+					<marker id={markerId} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill={color} /></marker>
 				</defs>
-				<line data-map-arrow={box.id} x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={`url(#${gradientId})`} stroke-width="2" marker-end={`url(#${markerId})`} />
-				<circle cx={start.x} cy={start.y} r="3" fill={stops[0].color} />
+				<line data-map-arrow={box.id} x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={color} stroke-width="2" marker-end={`url(#${markerId})`} />
+				<circle cx={start.x} cy={start.y} r="3" fill={color} />
 			{/if}
 		{/each}
 	</svg>

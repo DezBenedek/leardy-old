@@ -92,10 +92,25 @@ test('A nyíl a mögötte lévő képrésztől függően fekete vagy fehér, moz
 	assert.equal(contrastColor(pixels, 0, 0), '#fff');
 	assert.equal(contrastColor(pixels, 1, 0), '#000');
 	const forward = arrowContrast(pixels, { x: 0, y: 0 }, { x: 100, y: 0 }, 100, 100);
-	assert.equal(forward[0].color, '#fff');
-	assert.equal(forward.at(-1).color, '#000');
+	assert.equal(forward, '#fff');
 	const backward = arrowContrast(pixels, { x: 100, y: 0 }, { x: 0, y: 0 }, 100, 100);
-	assert.equal(backward[0].color, '#000');
-	assert.equal(backward.at(-1).color, '#fff');
+	assert.equal(backward, '#000');
 	assert.equal(contrastColor({ width: 1, height: 1, data: new Uint8ClampedArray([0, 0, 0, 0]) }, 0, 0), '#000');
+});
+
+test('Az egyszínű nyílnál a többségi háttér dönt, erős kezdőponti kontrasztigénynél a kezdőpont', () => {
+	function background(startGray, restGray) {
+		const data = new Uint8ClampedArray(101 * 9 * 4);
+		for (let y = 0; y < 9; y++) for (let x = 0; x < 101; x++) {
+			const gray = x < 20 ? startGray : restGray;
+			data.set([gray, gray, gray, 255], (y * 101 + x) * 4);
+		}
+		return { width: 101, height: 9, data };
+	}
+	const choose = (startGray, restGray) => arrowContrast(background(startGray, restGray), { x: 0, y: 4 }, { x: 100, y: 4 }, 100, 9);
+	assert.equal(choose(90, 255), '#000', 'A többségi világos háttér fekete nyilat ad');
+	assert.equal(choose(128, 0), '#fff', 'A többségi sötét háttér fehér nyilat ad');
+	assert.equal(choose(0, 255), '#fff', 'Nagyon sötét kezdőpontnál végig fehér a nyíl');
+	assert.equal(choose(255, 0), '#000', 'Nagyon világos kezdőpontnál végig fekete a nyíl');
+	assert.equal(arrowContrast(null, { x: 0, y: 0 }, { x: 10, y: 10 }, 100, 100), '#000');
 });
