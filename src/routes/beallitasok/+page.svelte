@@ -10,7 +10,6 @@
 		Database,
 		HardDrive,
 		Info,
-		Layers,
 		LogOut,
 		MessageCircle,
 		Moon,
@@ -48,7 +47,7 @@
 	const tutorial = getTutorial();
 	let { data }: { data: PageData } = $props();
 
-	type Sheet = null | 'account' | 'notif' | 'theme' | 'learning' | 'cards' | 'storage' | 'about';
+	type Sheet = null | 'account' | 'notif' | 'theme' | 'learning' | 'storage' | 'about';
 	type AccountEdit = null | 'name';
 
 	// Szerveradat a forras az elso paintkor, igy nincs profil-villanas.
@@ -100,7 +99,6 @@
 		notif: 'Értesítések',
 		theme: 'Megjelenés',
 		learning: 'Tanulás',
-		cards: 'Gyakorlás',
 		storage: 'Tárhely',
 		about: 'Névjegy'
 	};
@@ -409,9 +407,6 @@
 			return false;
 		}
 	}
-	let cardsSummary = $derived(
-		`Gyors kvíz: ${settings.quickQuizCount} kérdés · ${settings.autoAudio ? 'automata felolvasás' : 'gombnyomásra olvas fel'}`
-	);
 	let themeLabel = $derived(
 		theme.choice === 'light' ? 'Világos' : theme.choice === 'dark' ? 'Sötét' : 'Rendszer'
 	);
@@ -504,19 +499,6 @@
 		<ChevronRight size={18} class="shrink-0 text-stone-400" />
 	</button>
 
-	<button
-		onclick={() => (sheet = 'cards')}
-		class="flex w-full items-center gap-3.5 p-4 text-left transition hover:bg-stone-50 active:bg-stone-100 dark:active:bg-white/10 dark:hover:bg-white/5"
-	>
-		<span class={tile}>
-			<Layers size={22} />
-		</span>
-		<span class="min-w-0 flex-1">
-			<span class="block text-[15px] font-bold text-ink-900 dark:text-white">Gyakorlás</span>
-			<span class="block truncate text-[13px] text-ink-400 dark:text-stone-500">{cardsSummary}</span>
-		</span>
-		<ChevronRight size={19} class="shrink-0 text-stone-300 dark:text-stone-600" />
-	</button>
 	<button
 		onclick={() => {
 			refreshStorageInfo();
@@ -849,42 +831,6 @@
 					</div>
 				{/if}
 			</div>
-		{:else if sheet === 'cards'}
-			<ul class="mt-1 divide-y divide-stone-100 dark:divide-white/5">
-				<li class="flex items-center gap-3 py-3">
-					<div class="min-w-0 flex-1">
-						<p class="text-[15px] font-semibold text-ink-900 dark:text-white">Gyors kvíz kérdésszáma</p>
-					</div>
-					<div class="flex shrink-0 items-center gap-2">
-						<button
-							type="button"
-							onclick={() => (settings.quickQuizCount = Math.max(1, settings.quickQuizCount - 1))}
-							aria-label="Eggyel kevesebb"
-							class="grid size-9 place-items-center rounded-full border border-stone-200 text-lg font-bold text-ink-600 transition hover:bg-stone-50 active:scale-95 dark:border-white/15 dark:text-stone-300 dark:hover:bg-white/10"
-						>
-							−
-						</button>
-						<span class="w-8 text-center text-[15px] font-extrabold text-ink-900 tabular-nums dark:text-white">
-							{settings.quickQuizCount}
-						</span>
-						<button
-							type="button"
-							onclick={() => (settings.quickQuizCount = Math.min(50, settings.quickQuizCount + 1))}
-							aria-label="Eggyel több"
-							class="grid size-9 place-items-center rounded-full border border-stone-200 text-lg font-bold text-ink-600 transition hover:bg-stone-50 active:scale-95 dark:border-white/15 dark:text-stone-300 dark:hover:bg-white/10"
-						>
-							+
-						</button>
-					</div>
-				</li>
-				<li class="flex items-center gap-3 py-3">
-					<div class="min-w-0 flex-1">
-						<p class="text-[15px] font-semibold text-ink-900 dark:text-white">Automatikus felolvasás</p>
-						<p class="text-[13px] text-ink-400 dark:text-stone-500">Forgatás után felolvassa az idegen szót</p>
-					</div>
-					<Toggle bind:checked={settings.autoAudio} label="Automatikus felolvasás" />
-				</li>
-			</ul>
 		{:else if sheet === 'storage'}
 			<div class="mt-3">
 				<div class="rounded-2xl border border-stone-200 p-4 dark:border-white/10">

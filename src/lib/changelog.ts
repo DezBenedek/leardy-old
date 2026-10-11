@@ -30,20 +30,24 @@ export const CHANGES: ChangeEntry[] = [
 		title: 'Első stabil kiadás',
 		items: [
 			{
+				title: 'Interaktív útmutató',
+				desc: 'Végigvezet a Tanuláson, a Kártyákon és a Tantermen, később a Beállítások alatt bármikor újranyitható.'
+			},
+			{
 				title: 'Tanulás egy helyen',
-				desc: 'Leckék, kvízek és szókártyák haladás mentéssel, offline is.'
+				desc: 'Leckék, kvízek és szókártyák haladás mentéssel, tantárgy és szint szerint rendezve.'
 			},
 			{
 				title: 'Tanterem osztályokkal',
-				desc: 'Határidős kvízek és beadandók, tanári értékeléssel és értesítésekkel.'
+				desc: 'Határidős kvízek és beadandók tanári értékeléssel, üzenetekkel és jegyekkel.'
+			},
+			{
+				title: 'Offline működés',
+				desc: 'A megnyitott leckék és kártyák internet nélkül is elérhetők, a tárhely a Beállítások alatt üríthető.'
 			},
 			{
 				title: 'Megbízható értesítések',
-				desc: 'Push üzenetek zárt appnál is, egygombos engedélykéréssel a Beállítások alatt.'
-			},
-			{
-				title: 'Pontosabb leckeoldal',
-				desc: 'A nem létező lecke külön üzenetet kap, nem offline hibát mutat.'
+				desc: 'Push üzenet feladatról, jegyről és határidőről zárt alkalmazásnál is, egygombos bekapcsolással.'
 			}
 		]
 	}
