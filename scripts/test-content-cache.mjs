@@ -263,6 +263,15 @@ test('Érvénytelenítés után a korábban indított válasz nem írhatja vissz
  const cache = await h.fetch('/api/browse', { 'x-content-read': 'cached' });
  assert.equal(cache.response.status, 503);
 });
+test('Érvénytelenítéskor a már tárolt tantárgylisták és csomagok megmaradnak offline használatra', async () => {
+ const h = harness(async () => reply({ value: 'stored' }));
+ for (const path of ['/api/browse', '/api/browse?subject=english', '/api/packages?id=pack:saved']) await (await h.fetch(path)).settled;
+ await h.message({ type: 'invalidate-content' });
+ for (const path of ['/api/browse', '/api/browse?subject=english', '/api/packages?id=pack:saved']) {
+  const cached = await h.fetch(path, { 'x-content-read': 'cached' });
+  assert.equal((await cached.response.json()).value, 'stored');
+ }
+});
 test('A sikertelen precache-telepítés nem aktiválja az új workert', async () => {
  const h = harness(async () => reply({}));
  const cache = await h.caches.open('leardy-static-test');

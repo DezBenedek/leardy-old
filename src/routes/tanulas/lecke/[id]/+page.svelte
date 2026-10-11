@@ -63,7 +63,6 @@
 		<EmptyState title="A lecke nem elérhető" description="Internet nélkül csak a korábban megnyitott, ezen az eszközön tárolt leckék érhetők el." />
 	{/if}
 {:else if displayed}
-	{#if lessonQ.offline || !connected}<p role="status" class="mb-3 text-sm text-stone-500">Offline vagy. A mentett tananyagot látod.</p>{/if}
 	<LessonReader lessonPage={displayed.lessonPage} quizVersion={displayed.quizVersion} offline={lessonQ.offline || !connected} onBusyChange={(value) => busy = value} />
 {:else}
 	<div role="status" aria-label="Lecke betöltése" class="space-y-4"><Skeleton cls="h-8 w-2/3 rounded-lg" /><Skeleton cls="h-40 w-full rounded-2xl" /></div>

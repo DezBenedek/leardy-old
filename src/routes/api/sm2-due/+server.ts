@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getDb, requireUser } from '$lib/server/db';
-import { ensureCurriculumSchema, getCardProgress } from '$lib/server/curriculum';
+import { getCardProgress } from '$lib/server/curriculum';
 import { publishedLevelSql } from '$lib/server/curriculum-publication';
 import { isLanguageSubject, todayDay } from '$lib/sm2';
 
@@ -14,11 +14,7 @@ export const GET: RequestHandler = async (event) => {
 	const user = await requireUser(event, db);
 	if (!user) return json({ error: 'Jelentkezz be!' }, { status: 401 });
 	try {
-		try {
-			await ensureCurriculumSchema(db);
-		} catch {
-			// séma hiba esetén is próbáljuk az olvasást
-		}
+		// A sémát a migrációk biztosítják, olvasáskor nincs DDL-művelet.
 		const today = todayDay();
 		const progress: Record<string, { seen?: number; repetitions?: number; dueDay?: number }> =
 			await getCardProgress(db, user.id).catch(() => ({}));

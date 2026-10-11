@@ -95,7 +95,7 @@ test('Változó URL-ről nem tér vissza korábbi kiadás elavult adata', async 
 test('Offline újratöltéskor a Tanulás és a lecke saját URL-jén az alkalmazásváz töltődik be', async () => {
 	const h = harness(async () => { throw new TypeError('Nincs hálózat.'); });
 	await (await h.caches.open(currentCache)).put('/tanulas', new Response('learning shell'));
-	for (const path of ['/tanulas', '/tanulas?kereses=honfoglalás', '/tanulas/lecke/lesson#szakasz', '/tanulas/lecke/lesson/']) {
+	for (const path of ['/tanulas', '/tanulas?kereses=honfoglalás', '/tanulas/lecke/lesson#szakasz', '/tanulas/lecke/lesson/', '/kartyak', '/kartyak/pack%3Asaved', '/kartyak/deck%3Amine', '/tantargy/english']) {
 		const response = await h.fetch(path, true);
 		assert.equal(response.status, 200);
 		assert.equal(response.headers.get('location'), null);

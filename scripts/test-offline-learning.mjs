@@ -9,7 +9,7 @@ const protocol = transpile(await readFile(new URL('../src/lib/content-protocol.t
 const source = transpile(await readFile(new URL('../src/lib/offline-content.ts', import.meta.url), 'utf8'));
 function catalog(storage = new Map()) {
 	return vm.runInNewContext(protocol + '\n' + source + '\n({buildOfflineCatalog, readOfflineCatalog})', {
-		URL, caches: { async keys() { return [...storage.keys()]; }, async open(name) { return {
+		URL, structuredClone, caches: { async keys() { return [...storage.keys()]; }, async open(name) { return {
 			async keys() { return [...storage.get(name).keys()].map((url) => ({ url: `https://example.invalid${url}` })); },
 			async match(key) { return storage.get(name).get(new URL(key.url).pathname + new URL(key.url).search)?.clone(); }
 		}; } }
@@ -27,14 +27,15 @@ const tree = (done = false) => ({ id: 'subject', title: 'Tantárgy', icon: 'land
 ] });
 const json = (value) => new Response(JSON.stringify(value), { headers: { 'content-type': 'application/json' } });
 
-test('A választók csak ténylegesen mentett leckét tartalmazó ágakat kapnak', () => {
+test('A tárolt listák megmaradnak, de a címek nem számítanak letöltött leckének', () => {
 	const result = catalog().buildOfflineCatalog([document('saved')], [], [tree(true)]);
 	assert.equal(result.subjects.length, 1);
-	assert.equal(result.subjects[0].levelCount, 1);
-	assert.equal(result.subjects[0].lessonCount, 1);
+	assert.equal(result.subjects[0].levelCount, 2);
+	assert.equal(result.subjects[0].lessonCount, 2);
 	assert.equal(result.subjects[0].icon, 'landmark');
-	const lessons = result.trees.subject.levels[0].materials[0].lessons;
-	assert.equal(lessons.length, 1);
+	const lessons = result.trees.subject.levels.find((level) => level.id === 'level').materials[0].lessons;
+	assert.equal(lessons.length, 2);
+	assert.equal(result.lessons.length, 1);
 	assert.equal(lessons[0].id, 'saved');
 	assert.equal(lessons[0].done, true);
 	assert.equal(lessons[0].body_md, undefined);
@@ -61,8 +62,19 @@ test('Másik fiók teljesítési állapota és sérült cache-bejegyzés nem ker
 	const owner = await readOfflineCatalog('owner');
 	const other = await readOfflineCatalog('other');
 	assert.equal(owner.lessons.length, 1);
-	assert.equal(owner.trees.subject.levels[0].materials[0].lessons[0].done, true);
-	assert.equal(other.trees.subject.levels[0].materials[0].lessons[0].done, false);
+	assert.equal(owner.trees.subject.levels.find((level) => level.id === 'level').materials[0].lessons[0].done, true);
+	assert.equal(other.trees.subject.levels.find((level) => level.id === 'level').materials[0].lessons[0].done, false);
 	storage.get('leardy-content-v2').delete('/api/lessons/saved');
-	assert.equal((await readOfflineCatalog('owner')).subjects.length, 0);
+	const remaining = await readOfflineCatalog('owner');
+	assert.equal(remaining.subjects.length, 1);
+	assert.equal(remaining.lessons.length, 0);
+});
+
+test('A tantárgylista megnyitott lecke és betöltött fa nélkül is megmarad', async () => {
+	const storage = new Map([['leardy-content-v2', new Map([
+		['/api/browse', json({ subjects: [{ id: 'subject', title: 'Tantárgy', sort: 1 }] })]
+	])]]);
+	const result = await catalog(storage).readOfflineCatalog();
+	assert.equal(result.subjects[0].id, 'subject');
+	assert.equal(result.lessons.length, 0);
 });

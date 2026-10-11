@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { createBackNavigation } from '$lib/back-navigation';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -184,7 +185,7 @@
 			due = t;
 		}
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/assignments/${assignment.id}`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/assignments/${assignment.id}`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -224,7 +225,7 @@
 		if (deleting) return;
 		deleting = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/assignments/${assignment.id}`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/assignments/${assignment.id}`, {
 				method: 'DELETE'
 			});
 			const j = await res.json().catch(() => ({}));

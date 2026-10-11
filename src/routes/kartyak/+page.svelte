@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { contentFetch, offlineIdentity } from '$lib/content-client';
+	import { mutationFetch } from '$lib/mutation-fetch';
+	import { contentFetch } from '$lib/content-client';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import {
@@ -42,10 +43,6 @@
 	/* Könyvtár: csak a saját kártyacsomagok. A kvízek nem részei a Kártyák
 	   területnek: a kvíz a lecke oldalán él, a kártya külön csomagként,
 	   opcionálisan leckéhez csatolva. */
-
-	const LIB_CACHE = 'leardy-library:';
-	/** A kézi könyvtár-gyorstár lejárata: eddig időbélyeg nélkül, örökké élt. */
-	const LIB_CACHE_MS = 24 * 3_600_000;
 
 	/* A memóriában őrzött adat azonnal látszik, megnyitáskor újraellenőrizzük. */
 	const SUBJECTS_TTL = 30 * 60_000;
@@ -263,38 +260,9 @@
 	}
 
 	async function fetchLibraryRaw(): Promise<Package[]> {
-		const owner = offlineIdentity()?.id;
-		const key = owner ? `${LIB_CACHE}${owner}` : null;
-		let allowFallback = true;
-		try {
-			const res = await fetch('/api/library');
-			if (!res.ok) { allowFallback = res.status >= 500; throw new Error('net'); }
-			const j = await res.json();
-			const pkgs = j.packages ?? [];
-			try {
-				if (key && offlineIdentity()?.id === owner) localStorage.setItem(key, JSON.stringify({ at: Date.now(), packages: pkgs }));
-			} catch {
-				// tiltott storage
-			}
-			return pkgs;
-		} catch (error) {
-			if (!allowFallback || !key || offlineIdentity()?.id !== owner) throw error;
-			try {
-				const raw = localStorage.getItem(key);
-				if (raw) {
-					const parsed = JSON.parse(raw) as { at?: unknown; packages?: unknown };
-					// Időbélyeg nélküli régi formátum is elfogadott, de csak a lejárati
-					// időn belül; lejárt adat nem rajzolódik ki csendben.
-					const at = typeof parsed.at === 'number' ? parsed.at : 0;
-					if (Date.now() - at <= LIB_CACHE_MS && Array.isArray(parsed.packages)) {
-						return parsed.packages as Package[];
-					}
-				}
-			} catch {
-				// sérült gyorstár
-			}
-			throw error;
-		}
+		const res = await contentFetch('/api/library');
+		if (!res.ok) throw new Error(`http ${res.status}`);
+		return (await res.json()).packages ?? [];
 	}
 
 	async function fetchDeckLevels(id: string) {
@@ -357,7 +325,7 @@
 		if (dBusy) return;
 		dBusy = true;
 		try {
-			const res = await fetch('/api/decks', {
+			const res = await mutationFetch('/api/decks', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({

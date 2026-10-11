@@ -83,7 +83,7 @@ export function syncProgress(): Promise<void> {
 				if (response.status >= 500 || response.status === 429) throw new Error('Átmeneti szerverhiba.');
 				const result = await response.json();
 				if (response.ok && result.ok) {
-					await store(event.eventId); markLessonDone(event.lessonId); invalidate('home');
+					await store(event.eventId); markLessonDone(event.lessonId); invalidate('home', { exact: true });
 				} else {
 					await store({ ...event, status: result.status === 'changed' || result.status === 'deleted' ? result.status : 'invalid' });
 					toast.warning('Új kitöltés szükséges', 'A lecke vagy a kérdéssor közben megváltozott. A korábbi eredményt helyben megőriztük.');

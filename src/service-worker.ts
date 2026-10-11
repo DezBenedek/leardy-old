@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { CONTENT_CACHE, PRIVATE_CACHE_PREFIX, contentUrl, isContentUrl, isLearningPath, type ContentMessage } from './lib/content-protocol';
+import { CONTENT_CACHE, PRIVATE_CACHE_PREFIX, contentUrl, isContentUrl, isOfflinePath, type ContentMessage } from './lib/content-protocol';
 
 declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: { url: string; revision: string | null }[] };
 declare const __APP_BUILD_TIME__: string;
@@ -255,12 +255,7 @@ self.addEventListener('message', (event) => {
 					? document.lessonPage.material.id === change.topicId
 					: document.lessonPage.level.id === change.levelId, run);
 			}
-			for (const name of names) {
-				const cache = await caches.open(name);
-				for (const key of await cache.keys()) {
-					if (!new URL(key.url).pathname.startsWith('/api/lessons/')) await cache.delete(key, { ignoreVary: true });
-				}
-			}
+			// A listák és csomagok megmaradnak offline használatra, online újraellenőrizzük őket.
 		} else await Promise.all(names.map((k) => caches.delete(k)));
 		event.ports[0]?.postMessage({ ok: true });
 		await notify({ type: 'content-invalidated' });
@@ -322,7 +317,7 @@ self.addEventListener('fetch', (event) => {
 	}
 	if (req.mode === 'navigate') {
 		event.respondWith(fetch(req).catch(async () => {
-			if (isLearningPath(url.pathname)) return (await (await caches.open(CACHE)).match('/tanulas')) ?? Response.error();
+			if (isOfflinePath(url.pathname)) return (await (await caches.open(CACHE)).match('/tanulas')) ?? Response.error();
 			if (url.pathname === '/') return Response.redirect(new URL('/tanulas', self.location.origin));
 			return Response.error();
 		}));

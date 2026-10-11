@@ -7,9 +7,9 @@ export interface OfflineCatalog {
 	lessons: LessonDocument[];
 }
 
-/** A katalógusban szereplő cím önmagában nem jelent letöltött leckét. */
+/** A listák megmaradnak, a teljes leckedokumentumokat külön tartjuk nyilván. */
 export function buildOfflineCatalog(lessons: LessonDocument[], subjects: Subject[] = [], metadata: SubjectTree[] = []): OfflineCatalog {
-	const trees: Record<string, SubjectTree> = {};
+	const trees: Record<string, SubjectTree> = Object.fromEntries(metadata.map((tree) => [tree.id, structuredClone(tree)]));
 	for (const document of lessons) {
 		const { lesson, material, level, subject } = document.lessonPage;
 		const source = metadata.find((tree) => tree.id === subject.id);
@@ -25,7 +25,7 @@ export function buildOfflineCatalog(lessons: LessonDocument[], subjects: Subject
 		if (!targetLevel) tree.levels.push(targetLevel = { ...level, sort: sourceLevel?.sort ?? 0, materials: [] });
 		let targetMaterial = targetLevel.materials.find((node) => node.id === material.id);
 		if (!targetMaterial) targetLevel.materials.push(targetMaterial = { ...material, sort: sourceMaterial?.sort ?? 0, lessons: [] });
-		targetMaterial.lessons.push({ id: lesson.id, title: lesson.title, sort: sourceLesson?.sort ?? 0, done: sourceLesson?.done ?? false } satisfies LessonRef);
+		if (!targetMaterial.lessons.some((node) => node.id === lesson.id)) targetMaterial.lessons.push({ id: lesson.id, title: lesson.title, sort: sourceLesson?.sort ?? 0, done: sourceLesson?.done ?? false } satisfies LessonRef);
 	}
 	const order = (a: { sort: number; title: string }, b: { sort: number; title: string }) => a.sort - b.sort || a.title.localeCompare(b.title, 'hu');
 	for (const tree of Object.values(trees)) {
@@ -37,7 +37,9 @@ export function buildOfflineCatalog(lessons: LessonDocument[], subjects: Subject
 		tree.levelCount = tree.levels.length;
 		tree.lessonCount = tree.levels.reduce((sum, level) => sum + level.materials.reduce((n, material) => n + material.lessons.length, 0), 0);
 	}
-	return { subjects: Object.values(trees).sort(order).map(({ levels: _levels, ...subject }) => subject), trees, lessons };
+	const catalogSubjects = new Map(subjects.map((subject) => [subject.id, subject]));
+	for (const { levels: _levels, ...subject } of Object.values(trees)) catalogSubjects.set(subject.id, subject);
+	return { subjects: [...catalogSubjects.values()].sort(order), trees, lessons };
 }
 
 /** Csak a jelenlegi fiók személyes fája adhat teljesítési állapotot. */

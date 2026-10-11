@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { CalendarDays, Check, ChevronRight, FileText, Paperclip, Plus, Send, Undo2, X } from '@lucide/svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import Drawer from '$lib/components/Drawer.svelte';
@@ -209,7 +210,7 @@
 			form.set('kind', kind);
 			form.set('file', file);
 			if (extra) for (const [k, v] of Object.entries(extra)) form.set(k, v);
-			const res = await fetch(`/api/classrooms/${a.classroomId}/assignments/${a.id}/uploads`, {
+			const res = await mutationFetch(`/api/classrooms/${a.classroomId}/assignments/${a.id}/uploads`, {
 				method: 'POST',
 				body: form
 			});
@@ -255,7 +256,7 @@
 		const a = assignment;
 		if (!a) return;
 		try {
-			const res = await fetch(
+			const res = await mutationFetch(
 				`/api/classrooms/${a.classroomId}/assignments/${a.id}/uploads/${uploadId}`,
 				{ method: 'DELETE' }
 			);
@@ -286,7 +287,7 @@
 		if (a.dueDate != null && Date.now() > a.dueDate && (mine?.submitted ?? 0) !== 1) return;
 		saving = true;
 		try {
-			const res = await fetch(`/api/classrooms/${a.classroomId}/assignments/${a.id}/submissions`, {
+			const res = await mutationFetch(`/api/classrooms/${a.classroomId}/assignments/${a.id}/submissions`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ text })
@@ -311,7 +312,7 @@
 		if (!a || submitBusy) return;
 		submitBusy = true;
 		try {
-			const res = await fetch(`/api/classrooms/${a.classroomId}/assignments/${a.id}/submissions`, {
+			const res = await mutationFetch(`/api/classrooms/${a.classroomId}/assignments/${a.id}/submissions`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ text, submitted: want })

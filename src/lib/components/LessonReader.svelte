@@ -86,7 +86,7 @@
 	let related = $derived(relatedQ.data ?? []);
 	$effect(() => {
 		const id = lessonPage.lesson.id;
-		relatedQ.load(offline ? null : `packages:attached:${id}`, async (cached) => {
+		relatedQ.load(`packages:attached:${id}`, async (cached) => {
 			const response = await contentFetch(`/api/packages?attachedTo=${encodeURIComponent(id)}`, cached);
 			if (!response.ok) throw new Error(`http ${response.status}`);
 			return (await response.json()).packages ?? [];

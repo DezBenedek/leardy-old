@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { toast } from '$lib/toast.svelte';
 	import Button from '$lib/ui/Button.svelte';
 
@@ -39,7 +40,7 @@
 		if (busy) return;
 		busy = true;
 		try {
-			const res = await fetch(`/api/classrooms/${classroomId}/assignments/${assignmentId}/grades`, {
+			const res = await mutationFetch(`/api/classrooms/${classroomId}/assignments/${assignmentId}/grades`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ userId: student.user_id, grade, feedback: feedback.trim() })

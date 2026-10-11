@@ -92,6 +92,7 @@
 	const treeQ = new Query<SubjectTree | null>();
 	const subjectsQ = new Query<Subject[]>();
 	let subjects = $derived(localMode ? offlineCatalog.subjects : subjectsQ.data ?? []);
+	let downloadedLessons = $derived(new Set(offlineCatalog.lessons.map((document) => document.lessonPage.lesson.id)));
 	$effect(() => {
 		subjectsQ.load('subjects', async (cached) => {
 			const response = await contentFetch('/api/browse', cached);
@@ -314,6 +315,7 @@
 			if (message.type === 'content-status') {
 				if (message.url && new URL(message.url).pathname === '/api/browse') {
 					localMode = !connected || !!message.offline;
+					if (localMode) void refreshOfflineCatalog();
 				}
 			} else void refreshOfflineCatalog();
 			if (message.type === 'content-deleted') lastLesson = loadLastLesson();
@@ -453,7 +455,7 @@
 
 {#if localMode}
 	<p role="status" class="mt-3 rounded-xl bg-stone-100 px-3 py-2 text-sm text-stone-600 dark:bg-white/5 dark:text-stone-300">
-		Offline vagy. Csak az ezen az eszközön tárolt leckék láthatók. A keresés és a szűrők helyben működnek.
+		Offline vagy. A tárolt tantárgyak és tananyagok listája látható. A korábban megnyitott leckék olvashatók, a keresés és a szűrők helyben működnek.
 	</p>
 {/if}
 
@@ -538,6 +540,9 @@
 														</span>
 													{/if}
 													<span class="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{le.title}</span>
+													{#if localMode && !downloadedLessons.has(le.id)}
+														<span class="shrink-0 text-xs font-normal text-stone-500">Nincs letöltve</span>
+													{/if}
 													<ChevronRight size={16} class="shrink-0 text-stone-300 dark:text-stone-600" />
 												</a>
 											</li>

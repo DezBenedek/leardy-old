@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { createBackNavigation } from '$lib/back-navigation';
 	import { lessonPath } from '$lib/lesson-paths';
 	import { goto, replaceState } from '$app/navigation';
@@ -271,7 +272,7 @@ import {
 		if (submitBusy) return;
 		submitBusy = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/tasks/${task.id}/submissions`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/tasks/${task.id}/submissions`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ submitted: want })
@@ -340,7 +341,7 @@ import {
 		savingEdit = true;
 		editError = null;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/messages/${detailMsg.id}`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/messages/${detailMsg.id}`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ title: editMsgTitle, body: editMsgBody })
@@ -377,7 +378,7 @@ import {
 			due = t;
 		}
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/tasks/${detailTask.id}`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/tasks/${detailTask.id}`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -452,7 +453,7 @@ import {
 		lastReview = r;
 		saveQuizReview(room.id, task.id, r);
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/tasks/${task.id}/submissions`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/tasks/${task.id}/submissions`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ score, total })
@@ -535,7 +536,7 @@ import {
 		if (leaving) return;
 		leaving = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/leave`, { method: 'DELETE' });
+			const res = await mutationFetch(`/api/classrooms/${room.id}/leave`, { method: 'DELETE' });
 			const j = await res.json().catch(() => ({}));
 			if (!res.ok) {
 				toast.error('Nem sikerült kilépni', j.error ?? 'Próbáld újra!');
@@ -679,7 +680,7 @@ import {
 		msgError = null;
 		sendingMsg = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/messages`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/messages`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -781,7 +782,7 @@ import {
 		}
 		creatingTask = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/tasks`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/tasks`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -952,7 +953,7 @@ import {
 		}
 		creatingAssignment = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/assignments`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/assignments`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -1013,7 +1014,7 @@ import {
 			due = t;
 		}
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/assignments/${detailAssignment.id}`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/assignments/${detailAssignment.id}`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -1055,7 +1056,7 @@ import {
 		if (!detailAssignment || deletingAssignment) return;
 		deletingAssignment = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/assignments/${detailAssignment.id}`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/assignments/${detailAssignment.id}`, {
 				method: 'DELETE'
 			});
 			if (!res.ok) {
@@ -1140,7 +1141,7 @@ import {
 			form.set('file', new File([blob], 'kep.webp', { type: blob.type || 'image/webp' }));
 			form.set('width', String(width));
 			form.set('height', String(height));
-			const res = await fetch(
+			const res = await mutationFetch(
 				`/api/classrooms/${room.id}/assignments/${detailAssignment.id}/uploads`,
 				{ method: 'POST', body: form }
 			);
@@ -1166,7 +1167,7 @@ import {
 			const form = new FormData();
 			form.set('kind', 'audio');
 			form.set('file', new File([blob], audioFileName(blob), { type: blob.type || 'audio/webm' }));
-			const res = await fetch(
+			const res = await mutationFetch(
 				`/api/classrooms/${room.id}/assignments/${detailAssignment.id}/uploads`,
 				{ method: 'POST', body: form }
 			);
@@ -1209,7 +1210,7 @@ import {
 				const form = new FormData();
 				form.set('kind', 'file');
 				form.set('file', f);
-				const res = await fetch(
+				const res = await mutationFetch(
 					`/api/classrooms/${room.id}/assignments/${detailAssignment.id}/uploads`,
 					{ method: 'POST', body: form }
 				);
@@ -1231,7 +1232,7 @@ import {
 	async function deleteUpload(uploadId: string) {
 		if (!detailAssignment) return;
 		try {
-			const res = await fetch(
+			const res = await mutationFetch(
 				`/api/classrooms/${room.id}/assignments/${detailAssignment.id}/uploads/${uploadId}`,
 				{ method: 'DELETE' }
 			);
@@ -1264,7 +1265,7 @@ import {
 		}
 		assignmentSaving = true;
 		try {
-			const res = await fetch(
+			const res = await mutationFetch(
 				`/api/classrooms/${room.id}/assignments/${detailAssignment.id}/submissions`,
 				{
 					method: 'POST',
@@ -1291,7 +1292,7 @@ import {
 		if (!detailAssignment || assignmentSubmitBusy) return;
 		assignmentSubmitBusy = true;
 		try {
-			const res = await fetch(
+			const res = await mutationFetch(
 				`/api/classrooms/${room.id}/assignments/${detailAssignment.id}/submissions`,
 				{
 					method: 'POST',
@@ -1385,7 +1386,7 @@ import {
 			const subject = setSubjectId
 				? (subjects.find((s) => s.id === setSubjectId)?.title ?? '')
 				: setSubjectKeep;
-			const res = await fetch(`/api/classrooms/${room.id}`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ name: setName, subject })
@@ -1410,7 +1411,7 @@ import {
 		if (regenCode) return;
 		regenCode = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/code`, { method: 'POST' });
+			const res = await mutationFetch(`/api/classrooms/${room.id}/code`, { method: 'POST' });
 			const j = await res.json().catch(() => ({}));
 			if (!res.ok) {
 				toast.error('Nem sikerült', j.error ?? 'Próbáld újra!');
@@ -1438,7 +1439,7 @@ import {
 		if (kicking) return;
 		kicking = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/members/${id}`, { method: 'DELETE' });
+			const res = await mutationFetch(`/api/classrooms/${room.id}/members/${id}`, { method: 'DELETE' });
 			if (!res.ok) {
 				const j = await res.json().catch(() => ({}));
 				toast.error('Nem sikerült', j.error ?? 'Próbáld újra!');
@@ -1458,7 +1459,7 @@ import {
 		if (deleting) return;
 		deleting = true;
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}`, { method: 'DELETE' });
+			const res = await mutationFetch(`/api/classrooms/${room.id}`, { method: 'DELETE' });
 			if (!res.ok) {
 				const j = await res.json().catch(() => ({}));
 				toast.error('Nem sikerült törölni', j.error ?? '');

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { KeyRound, Plus, Sparkles, Users } from '@lucide/svelte';
 	import { auth } from '$lib/auth.svelte';
 	import { toast } from '$lib/toast.svelte';
@@ -104,7 +105,7 @@
 		createError = null;
 		creating = true;
 		try {
-			const res = await fetch('/api/classrooms', {
+			const res = await mutationFetch('/api/classrooms', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -135,7 +136,7 @@
 		joinError = null;
 		joining = true;
 		try {
-			const res = await fetch('/api/classrooms/join', {
+			const res = await mutationFetch('/api/classrooms/join', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ code: joinCode })

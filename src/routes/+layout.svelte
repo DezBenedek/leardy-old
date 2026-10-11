@@ -7,7 +7,7 @@
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { invalidate } from '$app/navigation';
-	import { isLearningPath } from '$lib/content-protocol';
+	import { isLearningPath, isOfflinePath } from '$lib/content-protocol';
 	import { startContentSync, invalidateContent, offlineIdentity } from '$lib/content-client';
 	import { startProgressSync, syncProgress, outbox, dismissProgress } from '$lib/progress-outbox.svelte';
 	import { startPwaUpdates } from '$lib/pwa-client';
@@ -30,7 +30,7 @@
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let connected = $state(true);
 	let learningPage = $derived(isLearningPath(page.url.pathname));
-	let offlineLearning = $derived(learningPage && (!connected || data.offline));
+	let offlineLearning = $derived(isOfflinePath(page.url.pathname) && (!connected || data.offline));
 	function reconnect() {
 		connected = true;
 		void invalidate('app:session');
@@ -182,9 +182,6 @@
 </svelte:head>
 
 {#snippet progressNotices()}
-	{#if learningPage && outbox.pending > 0}
-		<p role="status" class="mb-3 text-sm text-stone-500">{outbox.pending} eredmény mentésre vár.</p>
-	{/if}
 	{#if learningPage}
 		{#each outbox.rejected as result (result.eventId)}
 			<div role="status" class="mb-3 rounded-xl border border-amber-300 p-3 text-sm">

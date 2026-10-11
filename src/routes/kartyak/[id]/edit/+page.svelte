@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { createBackNavigation } from '$lib/back-navigation';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -367,7 +368,7 @@
 			const oldLessons = [...snap.lessons].sort().join('|');
 			if (curLessons !== oldLessons) patch.lessonIds = [...lessonIds];
 			if (Object.keys(patch).length > 0) {
-				const res = await fetch(`/api/decks/${encodeURIComponent(deckId)}`, {
+				const res = await mutationFetch(`/api/decks/${encodeURIComponent(deckId)}`, {
 					method: 'PATCH',
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify(patch)
@@ -394,7 +395,7 @@
 			}
 			// 2. Törölt kártyák.
 			for (const rid of [...removedIds]) {
-				const res = await fetch(`/api/deck-cards/${encodeURIComponent(rid)}`, { method: 'DELETE' });
+				const res = await mutationFetch(`/api/deck-cards/${encodeURIComponent(rid)}`, { method: 'DELETE' });
 				if (!res.ok) throw new Error(await readError(res, 'Nem sikerült törölni egy kártyát.'));
 				removedIds = removedIds.filter((x) => x !== rid);
 			}
@@ -404,7 +405,7 @@
 				const f = norm(c.front);
 				const b = norm(c.back);
 				if (f === c.orig.front && b === c.orig.back && c.sectionSlug === c.orig.section) continue;
-				const res = await fetch(`/api/deck-cards/${encodeURIComponent(c.id)}`, {
+				const res = await mutationFetch(`/api/deck-cards/${encodeURIComponent(c.id)}`, {
 					method: 'PATCH',
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify({ front: f, back: b, sectionSlug: c.sectionSlug })
@@ -417,7 +418,7 @@
 			// 4. Új kártyák sorrendben.
 			for (const c of cards) {
 				if (c.id || (!norm(c.front) && !norm(c.back))) continue;
-				const res = await fetch('/api/deck-cards', {
+				const res = await mutationFetch('/api/deck-cards', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify({
@@ -456,7 +457,7 @@
 		if (saving) return;
 		saving = true;
 		try {
-			const res = await fetch(`/api/decks/${encodeURIComponent(deckId)}`, { method: 'DELETE' });
+			const res = await mutationFetch(`/api/decks/${encodeURIComponent(deckId)}`, { method: 'DELETE' });
 			if (!res.ok) throw new Error(await readError(res, 'Nem sikerült törölni a csomagot.'));
 			toast.success('Csomag törölve.');
 			void goto('/kartyak');

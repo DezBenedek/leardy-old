@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { createBackNavigation } from '$lib/back-navigation';
 	import { lessonPath } from '$lib/lesson-paths';
 	import { resolve } from '$app/paths';
@@ -111,7 +112,7 @@
 			due = t;
 		}
 		try {
-			const res = await fetch(`/api/classrooms/${room.id}/tasks/${task.id}`, {
+			const res = await mutationFetch(`/api/classrooms/${room.id}/tasks/${task.id}`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({

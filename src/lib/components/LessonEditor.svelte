@@ -48,7 +48,7 @@
 	let editorGeneration = $state(0);
 	let animateSections = $state(false);
 	let RichEditor = $state<typeof LessonRichEditor>();
-	const sectionEditors: Record<string, { focusContent: () => void } | undefined> = {};
+	const sectionEditors = $state<Record<string, { focusContent: () => void } | undefined>>({});
 	let pendingFocusSlug = '';
 	let editorError = $state('');
 	let availableDraft = $state<LessonDraft | null>(null);

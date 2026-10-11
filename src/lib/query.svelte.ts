@@ -48,9 +48,9 @@ export async function getOrFetch<T>(key: string, fetcher: Fetcher<T>, ttlMs = 60
 	return promise;
 }
 
-export function invalidate(prefix: string): void {
+export function invalidate(prefix: string, options: { exact?: boolean } = {}): void {
 	for (const key of new Set([...mem.keys(), ...inflight.keys(), ...listeners.keys()])) {
-		if (key.startsWith(prefix)) {
+		if (options.exact ? key === prefix : key.startsWith(prefix)) {
 			versions.set(key, (versions.get(key) ?? 0) + 1);
 			mem.delete(key); inflight.delete(key);
 		}
@@ -90,26 +90,30 @@ export class Query<T> {
 	loading = $state(true);
 	error = $state(false);
 	offline = $state(false);
-	private last: { key: string; fetcher: Fetcher<T> } | null = null;
+	private last: { key: string; fetcher: Fetcher<T>; ttlMs: number } | null = null;
+	private readonly revalidate: 'always' | 'stale';
 	private seq = 0;
 	private stop: (() => void) | undefined;
 	private unsubscribe: (() => void) | undefined;
 
-	constructor() { onDestroy(() => this.dispose()); }
+	constructor(options: { revalidate?: 'always' | 'stale' } = {}) {
+		this.revalidate = options.revalidate ?? 'always';
+		onDestroy(() => this.dispose());
+	}
 	dispose(): void { this.seq++; this.stop?.(); this.unsubscribe?.(); this.last = null; }
 	prime(key: string | null, staleTtlMs = 60_000): void {
 		if (!key) return;
 		const hit = fresh<T>(key, staleTtlMs);
 		if (hit !== undefined) { this.data = hit; this.loading = false; this.error = false; }
 	}
-	load(key: string | null, fetcher: Fetcher<T>, _ttlMs = 60_000, staleTtlMs = _ttlMs, _persistMs = 0): void {
-		untrack(() => this.configure(key, fetcher, staleTtlMs));
+	load(key: string | null, fetcher: Fetcher<T>, ttlMs = 60_000, staleTtlMs = ttlMs, _persistMs = 0): void {
+		untrack(() => this.configure(key, fetcher, ttlMs, staleTtlMs));
 	}
-	private configure(key: string | null, fetcher: Fetcher<T>, staleTtlMs: number): void {
+	private configure(key: string | null, fetcher: Fetcher<T>, ttlMs: number, staleTtlMs: number): void {
 		const previous = this.last?.key;
 		this.stop?.(); this.unsubscribe?.();
 		const run = ++this.seq;
-		this.last = key ? { key, fetcher } : null;
+		this.last = key ? { key, fetcher, ttlMs } : null;
 		if (previous !== key) this.data = undefined;
 		if (!key) { this.data = undefined; this.loading = false; this.error = false; return; }
 		if (!browser) return;
@@ -123,22 +127,29 @@ export class Query<T> {
 		this.stop = subscribeContent((message) => {
 			if (!affected(key, message)) return;
 			if (message.type === 'content-status') { this.offline = !!message.offline; return; }
+			if (message.reason === 'resume' && this.revalidate === 'stale') { this.refresh(); return; }
 			if (message.type === 'content-deleted') {
 				invalidate(key); this.data = undefined; this.loading = false; this.error = true; return;
 			}
 			if (message.type === 'content-invalidated') invalidate(key);
 			this.touch(message.type === 'content-updated' && sameVariant(key, message));
 		});
-		this.touch();
+		if (this.revalidate === 'stale') this.refresh();
+		else this.touch();
 	}
+	/** A friss adatot újrahasználja, a lejárt adatot a háttérben frissíti. */
+	refresh(): void { this.run(false); }
 	touch(cacheOnly = false): void {
+		this.run(true, cacheOnly);
+	}
+	private run(force: boolean, cacheOnly = false): void {
 		if (!browser || !this.last) return;
-		const { key, fetcher } = this.last;
+		const { key, fetcher, ttlMs } = this.last;
 		const run = this.seq;
 		// A worker üzenete az eredeti kérés befejezése előtt is megérkezhet.
 		// Cache-frissítéskor külön olvasás kell, nem a korábbi promise.
 		if (cacheOnly) { versions.set(key, (versions.get(key) ?? 0) + 1); inflight.delete(key); }
-		void getOrFetch(key, fetcher, 0, 0, true, cacheOnly).then((data) => {
+		void getOrFetch(key, fetcher, ttlMs, 0, force, cacheOnly).then((data) => {
 			if (run === this.seq) { this.data = data; this.loading = false; this.error = false; }
 		}, () => { if (run === this.seq) { this.loading = false; if (this.data === undefined) this.error = true; } });
 	}

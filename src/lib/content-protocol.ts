@@ -10,6 +10,7 @@ export interface ContentMessage {
 	type: 'content-updated' | 'content-deleted' | 'content-invalidated' | 'content-status';
 	url?: string;
 	offline?: boolean;
+	reason?: 'resume';
 }
 
 export function contentUrl(raw: string, origin: string): string {
@@ -25,4 +26,8 @@ export function isContentUrl(url: URL): boolean {
 
 export function isLearningPath(pathname: string): boolean {
 	return /^\/tanulas(?:\/lecke\/[^/]+)?\/?$/.test(pathname);
+}
+
+export function isOfflinePath(pathname: string): boolean {
+	return isLearningPath(pathname) || /^\/kartyak(?:\/[^/]+)?\/?$/.test(pathname) || /^\/tantargy\/[^/]+\/?$/.test(pathname);
 }

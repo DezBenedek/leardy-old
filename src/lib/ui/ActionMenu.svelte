@@ -50,12 +50,16 @@
 		actions.some((action) => action.promote === 'large') ? 'large' :
 		actions.some((action) => action.promote === 'medium') ? 'medium' : 'small');
 
+	function close(restoreFocus = false) {
+		if (restoreFocus || shell?.contains(document.activeElement)) {
+			root?.querySelector<HTMLButtonElement>('[aria-expanded]')?.focus({ preventScroll: true });
+		}
+		open = false;
+	}
+
 	function run(action: ActionMenuItem) {
 		if (disabled || action.disabled) return;
-		if (closeOnSelect) {
-			open = false;
-			if (floating && !preserveFocus) root?.querySelector<HTMLButtonElement>('[aria-expanded]')?.focus({ preventScroll: true });
-		}
+		if (closeOnSelect) close(floating && !preserveFocus);
 		action.onclick();
 	}
 	function keepFocus(event: PointerEvent) {
@@ -63,20 +67,19 @@
 	}
 
 	function outside(event: PointerEvent) {
-		if (open && event.target instanceof Node && !root?.contains(event.target) && !shell?.contains(event.target)) open = false;
+		if (open && event.target instanceof Node && !root?.contains(event.target) && !shell?.contains(event.target)) close();
 	}
 
 	function keydown(event: KeyboardEvent) {
 		if (event.key === 'Escape' && open) {
 			if (floating) { event.preventDefault(); event.stopImmediatePropagation(); }
-			open = false;
-			root?.querySelector<HTMLButtonElement>('[aria-expanded]')?.focus();
+			close(true);
 		}
 	}
 	function position() {
 		if (!floating || !shell || !root) return;
 		const trigger = root.querySelector('[aria-expanded]')!.getBoundingClientRect();
-		if (open && (trigger.bottom < 0 || trigger.top > window.innerHeight)) { open = false; return; }
+		if (open && (trigger.bottom < 0 || trigger.top > window.innerHeight)) { close(); return; }
 		const height = shell.offsetHeight;
 		upward = window.innerHeight - trigger.bottom - 18 < height && trigger.top > window.innerHeight - trigger.bottom;
 		top = Math.max(8, upward ? trigger.top - height - 8 : Math.min(trigger.bottom + 8, window.innerHeight - height - 8));
@@ -85,8 +88,8 @@
 		left = Math.max(8, Math.min(desiredLeft, window.innerWidth - shell.offsetWidth - 8));
 	}
 	async function toggle(event: MouseEvent) {
-		open = !open;
-		if (!open) return;
+		if (open) { close(); return; }
+		open = true;
 		await tick();
 		position();
 		if (event.detail === 0) shell?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
@@ -100,8 +103,7 @@
 		const captureKey = (event: KeyboardEvent) => {
 			keydown(event);
 			if (open && event.key === 'Tab') {
-				open = false;
-				root?.querySelector<HTMLButtonElement>('[aria-expanded]')?.focus({ preventScroll: true });
+				close(true);
 				return;
 			}
 			if (!open || !['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;

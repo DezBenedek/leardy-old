@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { contentFetch } from '$lib/content-client';
 	import { createBackNavigation } from '$lib/back-navigation';
 	import { resolve } from '$app/paths';
@@ -171,7 +172,7 @@
 
 	async function fetchSavedIdsRaw(): Promise<Record<string, boolean>> {
 		try {
-			const res = await fetch('/api/library?ids=1');
+			const res = await contentFetch('/api/library?ids=1');
 			const j = await res.json();
 			const ids: Record<string, boolean> = {};
 			if (res.ok) for (const id of j.ids ?? []) ids[id] = true;
@@ -203,7 +204,7 @@
 	}
 	async function addToLibrary(pkg: Package) {
 		try {
-			const res = await fetch('/api/library', {
+			const res = await mutationFetch('/api/library', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ quizId: pkg.quizId })
@@ -221,7 +222,7 @@
 
 	async function removeFromLibrary(pkg: Package) {
 		try {
-			const res = await fetch('/api/library', {
+			const res = await mutationFetch('/api/library', {
 				method: 'DELETE',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ quizId: pkg.quizId })

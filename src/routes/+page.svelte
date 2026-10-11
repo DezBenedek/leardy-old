@@ -14,7 +14,7 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	let homeQ = new Query<HomeStats & { suggestions: Suggestion[] }>();
+	let homeQ = new Query<HomeStats & { suggestions: Suggestion[] }>({ revalidate: 'stale' });
 
 	interface LangDue {
 		subjectId: string;
@@ -31,8 +31,8 @@
 	type DueItem = DueQuiz | DueAssignment;
 	type GradingItem = AssignmentDetail & { kind: 'assignment'; pendingCount: number };
 
-	let wordsQ = new Query<{ languages: LangDue[] }>();
-	let tasksQ = new Query<{ tasks: DueItem[]; grading: GradingItem[] }>();
+	let wordsQ = new Query<{ languages: LangDue[] }>({ revalidate: 'stale' });
+	let tasksQ = new Query<{ tasks: DueItem[]; grading: GradingItem[] }>({ revalidate: 'stale' });
 	let words = $derived([...(wordsQ.data?.languages ?? [])].sort((a, b) => b.due - a.due || b.fresh - a.fresh));
 	let grading = $derived(tasksQ.data?.grading ?? []);
 	let pendingCount = $derived(grading.reduce((count, item) => count + item.pendingCount, 0));
@@ -89,12 +89,18 @@
 	function refreshDay() {
 		now = Date.now();
 		const day = learningDay(now);
-		if (day !== currentDay) {
+		if (day !== currentDay || (homeQ.data && homeQ.data.today !== day)) {
 			currentDay = day;
 			homeQ.touch();
 			wordsQ.touch();
 			tasksQ.touch();
 		}
+	}
+	function resumeHome() {
+		refreshDay();
+		homeQ.refresh();
+		wordsQ.refresh();
+		tasksQ.refresh();
 	}
 	onMount(() => {
 		refreshDay();
@@ -150,7 +156,7 @@
 	<meta name="description" content="A következő tanulási lépésed, heti aktivitásod és közelgő feladataid egy helyen." />
 </svelte:head>
 
-<svelte:window onfocus={refreshDay} />
+<svelte:window onfocus={resumeHome} />
 
 <header class="home-header">
 	<div class="min-w-0">

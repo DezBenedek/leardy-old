@@ -1,5 +1,7 @@
 import { browser } from '$app/environment';
 import { CONTENT_EVENT, IDENTITY_KEY, type ContentMessage } from './content-protocol';
+import { readStoredContent, storeContent } from './content-storage';
+import { offlineLibraryResponse, writeOfflineLibrary } from './offline-library';
 
 export interface OfflineIdentity { id: string; name: string }
 
@@ -19,11 +21,59 @@ export function rememberIdentity(user: OfflineIdentity | null): void {
 	} catch { /* A leckeolvasás tárolt fiók nélkül is működik. */ }
 }
 
-export function contentFetch(url: string, cacheOnly = false): Promise<Response> {
-	return fetch(url, { headers: {
-		'x-content-user': offlineIdentity()?.id ?? 'public',
-		...(cacheOnly ? { 'x-content-read': 'cached' } : {})
-	} });
+export async function contentFetch(url: string, cacheOnly = false): Promise<Response> {
+	if (!browser) return fetch(url);
+	const owner = offlineIdentity()?.id ?? 'public';
+	const target = new URL(url, location.origin);
+	const local = async () => {
+		if ((offlineIdentity()?.id ?? 'public') !== owner) return;
+		const stored = await readStoredContent(target, owner);
+		const library = owner !== 'public' ? offlineLibraryResponse(target, owner) : undefined;
+		if (!stored || !library) return stored ?? library;
+		if (target.pathname === '/api/packages') {
+			const cached = await stored.json();
+			const saved = await library.json();
+			const data = target.searchParams.has('id') ? { ...cached, package: saved.package }
+				: { packages: [...new Map([...cached.packages, ...saved.packages].map((pkg) => [pkg.quizId, pkg])).values()] };
+			return new Response(JSON.stringify(data), { headers: library.headers });
+		}
+		return stored;
+	};
+	const report = (response: Response) => {
+		window.dispatchEvent(new CustomEvent(CONTENT_EVENT, { detail: { type: 'content-status', url: target.href, offline: response.headers.get('x-content-offline') === 'true' } }));
+		return response;
+	};
+	if (!navigator.onLine || cacheOnly) {
+		const hit = await local();
+		if (hit) {
+			if (cacheOnly && navigator.onLine) hit.headers.set('x-content-offline', 'false');
+			return report(hit);
+		}
+	}
+	try {
+		const controlled = !!navigator.serviceWorker?.controller;
+		const response = await fetch(url, { headers: {
+			'x-content-user': owner,
+			...(cacheOnly && controlled ? { 'x-content-read': 'cached' } : {})
+		} });
+		if ((offlineIdentity()?.id ?? 'public') !== owner) throw new Error('A fiók megváltozott a betöltés közben.');
+		if (response.status >= 500) {
+			const hit = await local();
+			if (hit) return report(hit);
+		}
+		if (target.pathname === '/api/library' && !target.searchParams.has('ids') && response.ok && owner !== 'public') {
+			const data = await response.clone().json();
+			if (Array.isArray(data.packages)) {
+				try { writeOfflineLibrary(owner, data.packages); } catch { /* A hálózati adat ettől még használható. */ }
+			}
+		}
+		if (!controlled) await storeContent(target, owner, response).catch(() => undefined);
+		return report(response);
+	} catch (error) {
+		const hit = await local();
+		if (hit) return report(hit);
+		throw error;
+	}
 }
 
 export function subscribeContent(callback: (message: ContentMessage) => void): () => void {
@@ -55,7 +105,7 @@ export function startContentSync(): () => void {
 	const refresh = () => {
 		if (document.visibilityState !== 'visible' || !navigator.onLine || Date.now() - refreshedAt < 1000) return;
 		refreshedAt = Date.now();
-		window.dispatchEvent(new CustomEvent(CONTENT_EVENT, { detail: { type: 'content-invalidated' } }));
+		window.dispatchEvent(new CustomEvent(CONTENT_EVENT, { detail: { type: 'content-invalidated', reason: 'resume' } }));
 	};
 	const identityChanged = (event: StorageEvent) => {
 		if (event.key === IDENTITY_KEY && event.oldValue !== event.newValue) {

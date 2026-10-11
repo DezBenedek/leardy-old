@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { lessonPath } from '$lib/lesson-paths';
 	import { CalendarDays, Check, ListChecks, RotateCcw, Send, Undo2 } from '@lucide/svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -142,7 +143,7 @@
 		review = r;
 		saveQuizReview(t.classroomId, t.id, r);
 		try {
-			const res = await fetch(`/api/classrooms/${t.classroomId}/tasks/${t.id}/submissions`, {
+			const res = await mutationFetch(`/api/classrooms/${t.classroomId}/tasks/${t.id}/submissions`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ score, total })
@@ -162,7 +163,7 @@
 		if (!t || submitBusy) return;
 		submitBusy = true;
 		try {
-			const res = await fetch(`/api/classrooms/${t.classroomId}/tasks/${t.id}/submissions`, {
+			const res = await mutationFetch(`/api/classrooms/${t.classroomId}/tasks/${t.id}/submissions`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ submitted: want })

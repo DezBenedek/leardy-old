@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { mutationFetch } from '$lib/mutation-fetch';
 	import { contentFetch } from '$lib/content-client';
 	import { lessonPath } from '$lib/lesson-paths';
 	import { beforeNavigate, goto } from '$app/navigation';
@@ -60,7 +61,7 @@
 
 	async function fetchSavedIds() {
 		try {
-			const res = await fetch('/api/library?ids=1');
+			const res = await contentFetch('/api/library?ids=1');
 			const j = await res.json();
 			const ids: Record<string, boolean> = {};
 			if (res.ok) for (const qid of j.ids ?? []) ids[qid] = true;
@@ -72,7 +73,7 @@
 
 	async function addToLibrary() {
 		try {
-			const res = await fetch('/api/library', {
+			const res = await mutationFetch('/api/library', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ quizId: id })
@@ -233,7 +234,7 @@
 
 	async function removeFromLibrary() {
 		try {
-			const res = await fetch('/api/library', {
+			const res = await mutationFetch('/api/library', {
 				method: 'DELETE',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ quizId: id })
@@ -256,7 +257,7 @@
 	async function reportProgress(lessonId: string, score: number, totalQ: number) {
 		if (!lessonId) return;
 		try {
-			const res = await fetch('/api/progress', {
+			const res = await mutationFetch('/api/progress', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ lessonId, done: 1, score, total: totalQ })
