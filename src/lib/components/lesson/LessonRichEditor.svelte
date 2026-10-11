@@ -64,7 +64,7 @@
 	let tableKeyboard = $state(false);
 	let tableHeader = $state(false);
 	let tablePosition = $state('');
-	let documentHeight = $state(24);
+	let documentHeight = $state(48);
 	let rows = $state(3);
 	let cols = $state(3);
 	const fieldClass = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-500 dark:border-white/15 dark:bg-white/5';
@@ -261,7 +261,7 @@
 		]} />
 	</div>
 	</div></div>
-	<div class="document-viewport" style:height={`${expanded ? documentHeight : Math.min(documentHeight, 96)}px`}>
+	<div class="document-viewport" style:height={`${expanded ? Math.max(documentHeight, 96) : Math.max(48, Math.min(documentHeight, 96))}px`}>
 		<div bind:this={element} {@attach measureDocument} class="editor-document" onpointerdown={() => { pointerSelecting = true; }} onfocusin={() => { if (!pointerSelecting) activateDocument(); }} onclick={() => { pointerSelecting = false; activateDocument(); }} role="presentation"></div>
 	</div>
 </div>
@@ -362,7 +362,8 @@
 	.document-viewport { overflow: clip; }
 	.rich-editor:global([data-resizing]) .document-viewport { transition: height 260ms cubic-bezier(.65, 0, .35, 1); }
 	:global(.reduce-motion) .rich-editor, :global(.reduce-motion) .toolbar-reveal, :global(.reduce-motion) .rich-editor:global([data-resizing]) .document-viewport { transition: none; }
-	.editor-document :global(.lesson-editable) { min-height: 24px; outline: none; line-height: 24px; font-size: 14px; }
+	.editor-document :global(.lesson-editable) { min-height: 48px; outline: none; line-height: 24px; font-size: 14px; }
+	.expanded .editor-document :global(.lesson-editable) { min-height: 96px; }
 	.editor-document :global(p) { margin: 0; min-height: 24px; }
 	.rich-editor.expanded { border-color: color-mix(in srgb, var(--color-stone-200) 75%, white); }
 	:global(.dark) .rich-editor.expanded { border-color: rgb(255 255 255 / .25); }
@@ -410,7 +411,7 @@
 	:global(.dark) .table-footer { border-color: rgb(255 255 255 / .1); }
 	@media (prefers-reduced-motion: reduce) { .rich-editor, .toolbar-reveal, .rich-editor:global([data-resizing]) .document-viewport { transition: none; } }
 	@media (max-width: 767px) {
-		.expanded .toolbar-reveal { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 35; background: white; box-shadow: 0 3px 5px -4px rgb(0 0 0 / .25); }
+		.expanded .toolbar-reveal { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 35; background: white; }
 		:global(.dark) .expanded .toolbar-reveal { background: var(--color-stone-900); }
 		.table-action { min-height: 32px; }
 	}

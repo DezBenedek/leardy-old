@@ -51,8 +51,9 @@
 
 <button type="button" onclick={show} disabled={disabled || uploading} aria-label={value ? 'Kérdés képének módosítása' : 'Kép hozzáadása a kérdéshez'}
 	title={value ? 'Kérdés képének módosítása' : 'Kép hozzáadása'} aria-haspopup="dialog"
-	class={['grid size-8 shrink-0 place-items-center rounded-lg transition hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50 dark:hover:bg-brand-500/10', value ? 'text-brand-600 dark:text-brand-100' : 'text-stone-400 dark:text-stone-500']}>
+	class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm font-bold text-brand-600 transition hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50 dark:text-brand-100 dark:hover:bg-brand-500/10">
 	{#if uploading}<LoaderCircle size={17} class="animate-spin motion-reduce:animate-none" aria-hidden="true" />{:else}<ImagePlus size={17} aria-hidden="true" />{/if}
+	<span>Kép</span>
 </button>
 
 <div use:portal>

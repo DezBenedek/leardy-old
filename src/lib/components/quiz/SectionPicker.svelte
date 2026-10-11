@@ -102,7 +102,6 @@
 					</span>
 					<span class="min-w-0 flex-1">
 						<span class="block truncate text-[15px] font-extrabold text-ink-900 dark:text-white">Teljes lecke</span>
-						<span class="block text-[12px] font-medium text-stone-500 dark:text-stone-400">Csak a lecke teljes kvízében jelenik meg</span>
 					</span>
 					{#if noneSelected}
 						<Check size={18} strokeWidth={3} class="shrink-0 text-brand-600 dark:text-white" aria-hidden="true" />
@@ -125,7 +124,6 @@
 						</span>
 						<span class="min-w-0 flex-1">
 							<span class="block truncate text-[15px] font-extrabold text-ink-900 dark:text-white">{section.title}</span>
-							<span class="block text-[12px] font-medium text-stone-500 dark:text-stone-400">A bekezdés gyakorlásában is megjelenik</span>
 						</span>
 						{#if selected}
 							<Check size={18} strokeWidth={3} class="shrink-0 text-brand-600 dark:text-white" aria-hidden="true" />
