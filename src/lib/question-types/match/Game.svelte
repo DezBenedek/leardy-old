@@ -70,6 +70,13 @@
 		return pairColors[displayOrder.indexOf(index) % pairColors.length];
 	}
 
+	function selectLeft(index: number) {
+		if (submitted) return;
+		const next = { ...chosen };
+		delete next[index];
+		chosen = next;
+		selected = index;
+	}
 	function pairWith(option: string) {
 		if (submitted || selected === null) return;
 		const next = { ...chosen };
@@ -117,7 +124,7 @@
 				{@const left = lefts[index]}
 				<button type="button" disabled={submitted} aria-pressed={selected === index} data-match-left={index}
 					aria-label={matches[index] !== undefined ? `${left}, párja: ${matches[index]}` : left}
-					onclick={() => (selected = index)}
+					onclick={() => selectLeft(index)}
 					style:--pair-color={pairColor(index)}
 					class={['match-item min-h-12 min-w-0 rounded-xl border-2 px-2 py-2.5 text-left text-sm font-bold break-words transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:px-3', leftTone(index), matches[index] !== undefined && 'is-paired']}>
 					<span class="flex items-center gap-1.5"><span class={['pair-badge', matches[index] !== undefined && 'is-connected']} aria-hidden="true">{displayOrder.indexOf(index) + 1}</span><span class="min-w-0 flex-1">{left}</span></span>

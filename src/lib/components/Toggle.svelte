@@ -4,9 +4,10 @@
 	interface Props {
 		checked?: boolean;
 		label: string;
+		disabled?: boolean;
 	}
 
-	let { checked = $bindable(false), label }: Props = $props();
+	let { checked = $bindable(false), label, disabled = false }: Props = $props();
 </script>
 
 <button
@@ -14,9 +15,10 @@
 	role="switch"
 	aria-checked={checked}
 	aria-label={label}
+	{disabled}
 	onclick={() => (checked = !checked)}
 	class={[
-		'relative h-8 w-[52px] shrink-0 rounded-full border-2 transition-colors duration-200',
+		'relative h-8 w-[52px] shrink-0 rounded-full border-2 transition-colors duration-200 disabled:opacity-50',
 		checked
 			? 'border-brand-500 bg-brand-500'
 			: 'border-stone-400/70 bg-stone-200 dark:border-white/25 dark:bg-white/10'

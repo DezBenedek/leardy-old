@@ -79,6 +79,8 @@ await state.page.setViewportSize({ width: 320, height: 800 });
 await observe();
 await checkConnections({ 0: 'Budapest', 1: 'Párizs', 2: 'Bécs' });
 await click(button('Magyarország, párja: Budapest'));
+await checkConnections({ 1: 'Párizs', 2: 'Bécs' });
+assert.equal(await button('Budapest').getAttribute('aria-pressed'), 'false');
 await click(button('Párizs, párja: Franciaország'));
 await checkConnections({ 0: 'Párizs', 2: 'Bécs' });
 await click(button('Budapest'));
@@ -94,6 +96,21 @@ await checkConnections({ 0: 'Budapest', 1: 'Párizs', 2: 'Bécs' });
 await click(button('Válaszok újrakeverése'));
 await checkConnections({ 0: 'Budapest', 1: 'Párizs', 2: 'Bécs' });
 await state.page.screenshot({ path: '/tmp/leardy-question-types-drawer.png', scale: 'css' });
+
+// A sorrendből visszavett elem újra kiválasztható, a többi elem helye megmarad.
+await mountFixture({ type: 'order' });
+const optionsBox = state.page.getByRole('group', { name: 'Sorrendbe rakható lehetőségek' });
+await click(optionsBox.getByRole('button', { name: 'Első', exact: true }));
+await click(optionsBox.getByRole('button', { name: 'Második', exact: true }));
+await click(button('1. Első, visszatesz a lehetőségek közé'));
+assert.equal(await button('1. Második, visszatesz a lehetőségek közé').count(), 1);
+assert.equal(await optionsBox.getByRole('button', { name: 'Első', exact: true }).count(), 1);
+assert.equal(await optionsBox.locator('svg').count(), 0);
+await click(optionsBox.getByRole('button', { name: 'Első', exact: true }));
+await click(optionsBox.getByRole('button', { name: 'Harmadik', exact: true }));
+await click(button('Kész (3/3)'));
+assert.deepEqual(JSON.parse(await state.page.locator('[data-answer]').textContent()), ['Második', 'Első', 'Harmadik']);
+assert.equal(await button('1. Második, visszatesz a lehetőségek közé').isDisabled(), true);
 
 for (const type of ['choice', 'tf', 'text', 'match', 'order']) {
 	await mountFixture({ type, mode: 'editor' });

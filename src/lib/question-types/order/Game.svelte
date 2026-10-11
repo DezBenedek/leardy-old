@@ -1,12 +1,19 @@
 <script lang="ts">
-	import { ArrowDown, RotateCcw } from '@lucide/svelte';
+	import { RotateCcw } from '@lucide/svelte';
 	import type { GameProps } from '../../games/types';
 
 	let { q, onAnswer, picked = null, correct = null }: GameProps = $props();
 	let chosen = $state<string[]>([]);
 
 	let submitted = $derived(picked !== null && picked !== undefined);
-	let remaining = $derived(q.options.filter((o) => !chosen.includes(o)));
+	const values = $derived.by<string[]>(() => {
+		if (picked === null || picked === undefined) return chosen;
+		try {
+			const answer: unknown = JSON.parse(picked);
+			return Array.isArray(answer) && answer.every((item) => typeof item === 'string') ? answer : chosen;
+		} catch { return chosen; }
+	});
+	let remaining = $derived(q.options.filter((o) => !values.includes(o)));
 	let corrArr = $derived.by<string[]>(() => {
 		if (correct === null || correct === undefined) return [];
 		try {
@@ -27,36 +34,37 @@
 	}
 </script>
 
-<!-- Sorrendbe rakós: bökd sorrendben a helyes sorrendre. -->
-{#if chosen.length > 0}
-	<ol class="mb-2 space-y-1.5">
-		{#each chosen as p, i (`${i}:${p}`)}
-			<li
-				class={[
-					'flex items-center gap-2.5 rounded-xl border-2 px-3.5 py-2.5 text-[15px] font-semibold',
-					itemTone(p, i)
-				]}
-			>
-				<span class="grid size-6 shrink-0 place-items-center rounded-full bg-ink-900/10 text-xs font-extrabold tabular-nums dark:bg-white/15">{i + 1}</span>
-				{p}
+{#if values.length > 0}
+	<ol aria-label="Összeállított sorrend" class="mb-3 space-y-1.5">
+		{#each values as item, index (item)}
+			<li>
+				<button type="button" disabled={submitted} aria-label={`${index + 1}. ${item}, visszatesz a lehetőségek közé`} onclick={() => (chosen = chosen.filter((_, i) => i !== index))} class={['flex min-h-11 w-full items-center gap-2.5 rounded-xl border-2 px-3.5 py-2.5 text-left text-[15px] font-semibold disabled:opacity-100', itemTone(item, index)]}>
+					<span aria-hidden="true" class="grid size-6 shrink-0 place-items-center rounded-full bg-ink-900/10 text-xs font-extrabold tabular-nums dark:bg-white/15">{index + 1}</span>
+					{item}
+				</button>
 			</li>
 		{/each}
 	</ol>
 {/if}
 {#if !submitted}
-	<div class="grid gap-2">
-		{#each remaining as opt, i (`${i}:${opt}`)}
-			<button
-				onclick={() => (chosen = [...chosen, opt])}
-				class="rounded-xl border border-stone-200 bg-white px-4 py-3 text-left text-[15px] font-medium text-ink-900 transition hover:border-brand-500 hover:bg-brand-50 active:scale-[0.99] dark:border-white/10 dark:bg-transparent dark:text-white dark:hover:bg-white/5"
-			>
-				{opt}
-				{#if i < remaining.length - 1}<ArrowDown size={14} class="mt-1 text-stone-300" />{/if}
-			</button>
-		{/each}
+	<div role="group" aria-label="Sorrendbe rakható lehetőségek" class="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-white/10 dark:bg-white/5">
+		<p class="mb-2 text-xs font-bold text-stone-500 dark:text-stone-400">Lehetőségek</p>
+		<div class="flex flex-wrap gap-2">
+			{#each remaining as opt (opt)}
+				<button
+					type="button"
+					onclick={() => (chosen = [...chosen, opt])}
+					class="min-h-11 max-w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-left text-sm font-medium break-words text-ink-900 transition hover:border-brand-500 hover:bg-brand-50 active:scale-[0.99] dark:border-white/10 dark:bg-stone-900 dark:text-white dark:hover:bg-white/5"
+				>
+					{opt}
+				</button>
+			{/each}
+			{#if remaining.length === 0}<p class="text-xs text-stone-500 dark:text-stone-400">Minden elemet elhelyeztél. Kattints egy elemre a visszahelyezéshez.</p>{/if}
+		</div>
 	</div>
 	<div class="mt-3 flex gap-2">
 		<button
+			type="button"
 			onclick={() => (chosen = [])}
 			disabled={chosen.length === 0}
 			class="inline-flex items-center gap-1.5 rounded-full border border-stone-200 px-4 py-2.5 text-sm font-semibold text-ink-600 transition hover:bg-stone-50 dark:hover:bg-white/5 disabled:opacity-50 dark:border-white/10 dark:text-stone-300"
@@ -64,8 +72,9 @@
 			<RotateCcw size={15} /> Újra
 		</button>
 		<button
+			type="button"
 			onclick={() => onAnswer(JSON.stringify(chosen))}
-			disabled={chosen.length !== q.options.length}
+			disabled={chosen.length !== q.options.length || chosen.length === 0}
 			class="flex-1 rounded-full bg-brand-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600 active:scale-[0.98] disabled:opacity-50"
 		>
 			Kész ({chosen.length}/{q.options.length})

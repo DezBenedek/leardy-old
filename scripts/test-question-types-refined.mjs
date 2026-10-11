@@ -68,6 +68,18 @@ test('A vaktérkép mezői, nyilai és módjai megmaradnak, a beírós játékba
 	assert.notEqual(validateQuestion(draft('map', { imageUrl: 'https://example.com/map.png', settings: { mode: 'text', boxes: [{ ...boxes[0], answer: '' }] } })), null);
 });
 
+test('Az egyéni nyílszín megmarad mentés, előnézet, másolás és játékra előkészítés után', () => {
+	const source = draft('map', { imageUrl: 'https://example.com/map.png', settings: { mode: 'text', boxes: boxes.map((box) => ({ ...box, arrowColor: '#ef4444' })) } });
+	const loaded = loadQuestionOptions('map', draftOptionsJson(source));
+	assert.deepEqual(loaded.settings, source.settings);
+	const preview = draftToPreview(source);
+	assert.equal(prepareQuestion(preview).boxes[0].arrowColor, '#ef4444');
+	const copy = seedToDraft({ ...source, title: 'Sablon', subtitle: '' }, 'másik');
+	copy.settings.boxes[0].arrowColor = '#000000';
+	assert.equal(source.settings.boxes[0].arrowColor, '#ef4444');
+	for (const arrowColor of ['red', '#123', '#fffffff', 123, null]) assert.throws(() => readSettings({ boxes: [{ ...boxes[0], arrowColor }] }));
+});
+
 test('A sérült beállításokat a közös olvasó visszautasítja', () => {
 	for (const raw of [null, [], { mode: 'hibás' }, { multiple: 'true' }, { boxes: [{ ...boxes[0], x: NaN }] }, { boxes: [{ ...boxes[0], x: 101 }] }, { boxes: [{ ...boxes[0], width: 0 }] }, { boxes: [{ ...boxes[0], arrow: { x: 20, y: Infinity } }] }]) assert.throws(() => readSettings(raw));
 	assert.notEqual(validateQuestion(draft('gap', { settings: { mode: 'text', text: '[[Budapest] és Bécs.' } })), null);

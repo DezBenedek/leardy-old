@@ -11,6 +11,7 @@ export interface MapBox {
 	width: number;
 	answer: string;
 	arrow?: { x: number; y: number };
+	arrowColor?: string;
 }
 export interface QuestionSettings {
 	multiple?: boolean;

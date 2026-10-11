@@ -83,6 +83,13 @@ assert.equal(await button('Első').isDisabled(), true);
 for (const type of ['gap', 'map']) {
 	for (const inputMode of ['text', 'dropdown', 'drag']) {
 		await mountFixture({ type, inputMode });
+		const slots = state.page.locator('[data-fill-slot]');
+		for (const slot of await slots.all()) {
+			if (inputMode === 'dropdown') assert.equal(await slot.locator('select').evaluate((node) => node.selectedOptions[0].textContent), '');
+			else if (inputMode === 'text') assert.equal(await slot.locator('input').getAttribute('placeholder'), null);
+			else assert.equal((await slot.textContent()).trim(), '');
+			if (type === 'gap') assert.ok((await slot.boundingBox()).height <= 32);
+		}
 		const submit = button('Ellenőrzés (0/2)');
 		assert.equal(await submit.isDisabled(), true);
 		if (inputMode === 'text') {
@@ -114,6 +121,9 @@ for (const type of ['gap', 'map']) {
 
 await mountFixture({ type: 'gap', mode: 'editor', inDrawer: true });
 await fill(state.page.getByRole('textbox', { name: 'Hiányos szöveg', exact: true }), 'A [[Duna]] folyó, [[Budapest]] főváros.');
+assert.equal(await state.page.getByText('1. Duna', { exact: true }).count(), 0);
+await click(state.page.getByRole('switch', { name: 'Szavak újrahasználása', exact: true }));
+assert.equal((await saved()).settings.reusable, true);
 await click(button('Beírós'));
 data = await saved();
 assert.equal(data.settings.text, 'A [[Duna]] folyó, [[Budapest]] főváros.');
@@ -123,8 +133,9 @@ assert.equal(data.settings.mode, 'text');
 async function layoutFrames(main, region) {
 	const frames = [];
 	const until = Date.now() + 650;
+	const regionId = region ? await region.getAttribute('id') : null;
 	do {
-		frames.push({ main: await main.boundingBox(), panel: await state.page.getByRole('dialog').boundingBox(), region: region ? await region.boundingBox() : null });
+		frames.push(await main.evaluate((node, regionId) => ({ main: node.getBoundingClientRect().toJSON(), panel: node.closest('[role=dialog]').getBoundingClientRect().toJSON(), region: regionId ? document.getElementById(regionId).getBoundingClientRect().toJSON() : null }), regionId));
 		await new Promise((resolve) => setTimeout(resolve, 12));
 	} while (Date.now() < until);
 	return frames;
@@ -161,6 +172,31 @@ async function animatedDisclosure(main, name, open) {
 	assert.equal(await toggle.getAttribute('aria-expanded'), String(open));
 	await fittedPanel();
 }
+// Minden feltételes beállításnak legyen köztes lenyílási és összecsukódási állapota.
+async function animatedOption(main, selector, action, open) {
+	const measure = () => main.evaluate((node, selector) => {
+		const region = node.closest('form').querySelector(selector);
+		return { main: node.getBoundingClientRect().toJSON(), panel: node.closest('[role=dialog]').getBoundingClientRect().toJSON(), region: region?.getBoundingClientRect().toJSON() ?? null };
+	}, selector);
+	const before = await measure();
+	await action();
+	const frames = [];
+	const until = Date.now() + 550;
+	do {
+		frames.push(await measure());
+		await new Promise((resolve) => setTimeout(resolve, 12));
+	} while (Date.now() < until);
+	stableFrames(before, frames);
+	const start = before.region?.height ?? 0;
+	const end = frames.at(-1).region?.height ?? 0;
+	assert.ok(open ? end > start + 20 : start > end + 20, `${selector}: megfelelő irányú méretváltozás`);
+	assert.ok(frames.some((frame) => {
+		const height = frame.region?.height ?? 0;
+		return height > Math.min(start, end) + 1 && height < Math.max(start, end) - 1;
+	}), `${selector}: animált köztes állapot`);
+	await fittedPanel();
+}
+
 for (const viewport of [{ width: 1000, height: 1400 }, { width: 375, height: 1000 }]) {
 	await state.page.setViewportSize(viewport);
 	for (const type of ['map', 'gap']) {
@@ -173,13 +209,35 @@ for (const viewport of [{ width: 1000, height: 1400 }, { width: 375, height: 100
 			stableFrames(before, await layoutFrames(main));
 			await fittedPanel();
 		}
+		await animatedOption(main, '[id$="-fill-options"]', () => click(button('Beírós')), false);
+		await animatedOption(main, '[id$="-fill-options"]', () => click(button('Behúzós')), true);
+		await animatedOption(main, '[id$="-reuse"]', () => click(button('Lenyílós')), false);
+		await animatedOption(main, '[id$="-reuse"]', () => click(button('Behúzós')), true);
+		if (type === 'map') {
+			await animatedOption(main, '[data-map-field-settings]', () => click(button('1. mező mozgatása')), true);
+			const arrowSwitch = state.page.getByRole('switch', { name: 'Nyíl bekapcsolása', exact: true });
+			await animatedOption(main, '[id$="-arrow-options"]', () => click(arrowSwitch), false);
+			await animatedOption(main, '[id$="-arrow-options"]', () => click(arrowSwitch), true);
+			await animatedOption(main, '[id$="-arrow-options"]', () => click(button('2. mező mozgatása')), false);
+			await animatedOption(main, '[id$="-arrow-options"]', () => click(button('1. mező mozgatása')), true);
+			for (let index = 0; index < 4; index++) await click(arrowSwitch);
+			await layoutFrames(main);
+			assert.equal(await arrowSwitch.getAttribute('aria-checked'), 'true');
+			assert.equal(await state.page.getByRole('button', { name: 'Piros nyíl', exact: true }).count(), 1);
+			await animatedOption(main, '[data-map-field-settings]', () => click(button('Mező törlése')), false);
+			await observe();
+		}
 		if (viewport.width === 1000) {
 			if (type === 'map') {
-				await animatedDisclosure(main, 'Mező beállításai', true);
-				await animatedDisclosure(main, 'Mező beállításai', false);
+				assert.equal(await state.page.getByRole('textbox', { name: 'Helyes válasz', exact: true }).count(), 0);
+				await click(button('1. mező mozgatása'));
+				assert.equal(await state.page.getByRole('textbox', { name: 'Helyes válasz', exact: true }).inputValue(), 'Bécs');
 			}
 			await animatedDisclosure(main, 'További válaszok', true);
 			await click(button('Válasz hozzáadása'));
+			const card = await state.page.locator('[data-extra-answers]').boundingBox();
+			const extra = await state.page.getByRole('textbox', { name: '1. további lehetőség', exact: true }).boundingBox();
+			assert.ok(extra.x >= card.x && extra.y >= card.y && extra.y + extra.height <= card.y + card.height, 'A további válaszok a kártyán belül maradnak');
 			await fill(state.page.getByRole('textbox', { name: '1. további lehetőség', exact: true }), 'További szó');
 			await animatedDisclosure(main, 'További válaszok', false);
 			await click(button('Beírós'));
@@ -203,8 +261,22 @@ assert.equal(await state.page.locator('[data-map-arrow="elso"]').getAttribute('s
 assert.equal(await state.page.locator('[data-map-canvas] marker path').first().getAttribute('fill'), '#000');
 assert.equal(await state.page.locator('[data-map-canvas] circle').first().getAttribute('fill'), '#000');
 
+// Az egyéni színt a háttér, a mozgatás és a kapcsoló sem írja felül.
+await click(button('1. mező mozgatása'));
+await click(button('Piros nyíl'));
+assert.equal(await state.page.locator('[data-map-arrow="elso"]').getAttribute('stroke'), '#ef4444');
+await arrowHandle.press('Shift+ArrowLeft');
+assert.equal(await state.page.locator('[data-map-arrow="elso"]').getAttribute('stroke'), '#ef4444');
+await click(state.page.getByRole('switch', { name: 'Nyíl bekapcsolása', exact: true }));
+await click(state.page.getByRole('switch', { name: 'Nyíl bekapcsolása', exact: true }));
+assert.equal(await state.page.locator('[data-map-arrow="elso"]').getAttribute('stroke'), '#ef4444');
+assert.equal((await saved()).settings.boxes[0].arrowColor, '#ef4444');
+await click(button('Automatikus nyílszín visszaállítása'));
+assert.equal((await saved()).settings.boxes[0].arrowColor, undefined);
+
 await mountFixture({ type: 'map', mode: 'editor', inDrawer: true });
 await checkArrows();
+await click(button('1. mező mozgatása'));
 await fill(state.page.getByRole('textbox', { name: 'Helyes válasz', exact: true }), 'Új válasz');
 await drag(button('1. mező mozgatása'), null, 30, 25);
 await checkArrows();
@@ -215,8 +287,7 @@ await observe();
 await checkArrows();
 await click(button('Mező hozzáadása'));
 await fill(state.page.getByRole('textbox', { name: 'Helyes válasz', exact: true }), 'Harmadik válasz');
-await click(button('Mező beállításai'));
-await click(state.page.getByRole('checkbox', { name: 'Nyíl bekapcsolása', exact: true }));
+await click(state.page.getByRole('switch', { name: 'Nyíl bekapcsolása', exact: true }));
 await click(button('Lenyílós'));
 data = await saved();
 assert.equal(data.settings.boxes.length, 3);
@@ -243,10 +314,12 @@ for (const props of [{ type: 'choice', multiple: true }, { type: 'gap', inputMod
 await state.page.setViewportSize({ width: 1000, height: 1000 });
 await mountFixture({ type: 'map', mode: 'core' });
 await click(button('1. kérdés szerkesztése: Tesztkérdés'));
+await click(button('1. mező mozgatása'));
 await fill(state.page.getByRole('textbox', { name: 'Helyes válasz', exact: true }), 'Új főváros');
 data = await saved();
 assert.equal(data.settings.boxes[0].answer, 'Új főváros');
 await click(button('1. kérdés szerkesztése: Tesztkérdés'));
+await click(button('1. mező mozgatása'));
 assert.equal(await state.page.getByRole('textbox', { name: 'Helyes válasz', exact: true }).inputValue(), 'Új főváros');
 const template = { ...data, key: 'sajat', title: 'Vaktérképsablon', subtitle: '', createdAt: 1, settings: { ...data.settings, boxes: data.settings.boxes.map((box, index) => ({ ...box, answer: index === 0 ? 'Sablonválasz' : box.answer })) } };
 await state.page.route('**/api/quiz-templates', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ templates: [template] }) }));
@@ -254,6 +327,7 @@ await click(button('Kérdés további műveletei'));
 await click(button('Saját sablon betöltése'));
 await click(button('Vaktérképsablon Vaktérkép'));
 await observe();
+await click(button('1. mező mozgatása'));
 assert.equal(await state.page.getByRole('textbox', { name: 'Helyes válasz', exact: true }).inputValue(), 'Sablonválasz');
 data = await saved();
 assert.equal(data.settings.boxes[0].answer, 'Sablonválasz');

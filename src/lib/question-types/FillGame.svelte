@@ -58,16 +58,16 @@
 </script>
 
 {#snippet field(index: number)}
-	<AnswerSlot {index} {mode} value={values[index] ?? ''} options={[...new Set(q.options)]} disabled={submitted} active={selected !== null} verdict={submitted && expected ? normalizeAnswer(values[index] ?? '') === normalizeAnswer(expected[index] ?? '') : undefined} onChange={(value) => (answers[index] = value)} onPlace={() => place(index)} />
+	<AnswerSlot {index} {mode} inline={q.type === 'gap'} value={values[index] ?? ''} options={[...new Set(q.options)]} disabled={submitted} active={selected !== null} verdict={submitted && expected ? normalizeAnswer(values[index] ?? '') === normalizeAnswer(expected[index] ?? '') : undefined} onChange={(value) => (answers[index] = value)} onPlace={() => place(index)} />
 {/snippet}
 
 <div data-fill-game class="space-y-4">
 	{#if q.type === 'map' && q.imageUrl}
 		<Canvas src={q.imageUrl} boxes={q.boxes ?? []} {field} />
 	{:else}
-		<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-base leading-[3.5] whitespace-pre-wrap text-ink-900 dark:border-white/10 dark:bg-white/5 dark:text-white">
+		<div data-gap-text class="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-base leading-[2.5] whitespace-pre-wrap text-ink-900 dark:border-white/10 dark:bg-white/5 dark:text-white">
 			{#each gapParts(q.gapText ?? '') as part, index (index)}
-				{#if part.index !== undefined}<span class="mx-1 inline-block h-11 w-40 max-w-full align-middle">{@render field(part.index)}</span>{:else}{part.text}{/if}
+				{#if part.index !== undefined}<span class="mx-0.5 inline-block h-8 max-w-full align-middle" style:width={`${Math.max(7, Math.min(32, (values[part.index]?.length ?? 0) + (mode === 'dropdown' ? 4 : 2)))}ch`}>{@render field(part.index)}</span>{:else}{part.text}{/if}
 			{/each}
 		</div>
 	{/if}

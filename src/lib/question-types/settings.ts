@@ -28,8 +28,10 @@ export function readSettings(raw: unknown): QuestionSettings | undefined {
 			if (typeof box.id !== 'string' || !box.id || box.id.length > 80 || typeof box.answer !== 'string' || box.answer.length > 200
 				|| !coordinate(box.x) || !coordinate(box.y) || typeof box.width !== 'number' || !Number.isFinite(box.width) || box.width < 10 || box.width > 60) throw new Error('Érvénytelen képmező.');
 			if (box.arrow !== undefined && (!box.arrow || !coordinate(box.arrow.x) || !coordinate(box.arrow.y))) throw new Error('Érvénytelen nyílpont.');
+			if (box.arrowColor !== undefined && (typeof box.arrowColor !== 'string' || !/^#[0-9a-f]{6}$/i.test(box.arrowColor))) throw new Error('Érvénytelen nyílszín.');
 			return { id: box.id, x: box.x, y: box.y, width: box.width, answer: box.answer,
-				...(box.arrow ? { arrow: { x: box.arrow.x, y: box.arrow.y } } : {}) };
+				...(box.arrow ? { arrow: { x: box.arrow.x, y: box.arrow.y } } : {}),
+				...(box.arrowColor ? { arrowColor: box.arrowColor } : {}) };
 		});
 	}
 	return result;

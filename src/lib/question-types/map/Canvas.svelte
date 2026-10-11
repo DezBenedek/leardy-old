@@ -65,7 +65,7 @@
 			{#if box.arrow}
 				{@const end = boxArrowEnd(box, size.width, size.height)}
 				{@const start = { x: box.arrow.x * size.width / 100, y: box.arrow.y * size.height / 100 }}
-				{@const color = arrowContrast(pixels, start, end, size.width, size.height)}
+				{@const color = box.arrowColor ?? arrowContrast(pixels, start, end, size.width, size.height)}
 				{@const markerId = `${instanceId}-${box.id}-arrow`}
 				<defs>
 					<marker id={markerId} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill={color} /></marker>
